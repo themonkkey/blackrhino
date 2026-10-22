@@ -16,3 +16,5 @@ CREATE INDEX IF NOT EXISTS idx_share_pts ON share_pts(id, ts);
 CREATE TABLE IF NOT EXISTS rl (k TEXT PRIMARY KEY, t INTEGER, n INTEGER);          -- rate limit: "kind|ip|hour" -> count, t = hour bucket (cron prunes)
 CREATE TABLE IF NOT EXISTS share_cnt (id TEXT PRIMARY KEY, n INTEGER);             -- points stored per share (cap without COUNT(*))
 CREATE INDEX IF NOT EXISTS idx_share_created ON share(created);
+-- 2026-10-18 write budget: one snapshot row per 10-min run, folded into flights hourly
+CREATE TABLE IF NOT EXISTS snap (t INTEGER PRIMARY KEY, v TEXT);

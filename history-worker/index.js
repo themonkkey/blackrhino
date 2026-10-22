@@ -54,23 +54,44 @@ async function record(env) {
     const pt = `${ts},${(+a.lat).toFixed(3)},${(+a.lon).toFixed(3)},${a.ground ? 0 : Math.round(+a.alt || 0)}`;
     return [`${day}|${cs}|${hex}`, day, cs, hex, nul(a.reg), nul(a.type), nul(rt.o), nul(rt.d), ts, pt];
   });
-  const c = cols(10);
-  // WHERE true: required so SQLite does not read ON CONFLICT as a join clause after INSERT ... SELECT
-  if (rows.length) stmts.push(env.DB.prepare(`INSERT INTO flights (key, day, cs, hex, reg, type, o, d, first, last, track)
-    SELECT ${c.slice(0, 9).join(', ')}, ${c[8]}, ${c[9]} FROM json_each(?) WHERE true
-    ON CONFLICT(key) DO UPDATE SET last = excluded.last, track = flights.track || ';' || excluded.track,
-      reg = COALESCE(flights.reg, excluded.reg), type = COALESCE(flights.type, excluded.type),
-      o = COALESCE(flights.o, excluded.o), d = COALESCE(flights.d, excluded.d)`).bind(JSON.stringify(rows)));
+  // D1 free tier = 100k rows written/day. Writing every aircraft every 10 min (~700 row writes incl. indexes) blew it daily.
+  // Now: each run stores ONE snapshot row; once an hour the snapshots are folded into one upsert per flight
+  // (~26k writes/day). History therefore lags the live feed by up to an hour.
+  stmts.push(env.DB.prepare('INSERT OR REPLACE INTO snap (t, v) VALUES (?, ?)').bind(now, JSON.stringify(rows)));
   stmts.push(env.DB.prepare("INSERT OR IGNORE INTO meta (k, v) VALUES ('since', ?)").bind(new Date(now * 1000).toISOString()));
   stmts.push(env.DB.prepare("INSERT OR REPLACE INTO meta (k, v) VALUES ('last_run', ?)").bind(`${now}|${rows.length}|${newRoutes.length}`));
   await env.DB.batch(stmts);
-  return {aircraft: rows.length, routes_added: newRoutes.length};
+  const compacted = new Date(now * 1000).getUTCMinutes() < 10 ? await compact(env) : 0;
+  return {aircraft: rows.length, routes_added: newRoutes.length, compacted};
 }
 
-// housekeeping: prune rate-limit buckets every run; hourly purge old shares/flights + cache the row count for /status
+// fold pending snapshots into the flights table: one upsert per flight per hour, track points appended in order.
+// Only last/track change on update (not indexed), so updates cost one row write each; indexes are written once per new flight.
+async function compact(env) {
+  const {results} = await env.DB.prepare('SELECT t, v FROM snap ORDER BY t').all();
+  if (!results.length) return 0;
+  const by = new Map();
+  for (const s of results) for (const r of JSON.parse(s.v)) {
+    const [key, day, cs, hex, reg, type, o, d, ts, pt] = r, e = by.get(key);
+    if (!e) by.set(key, [key, day, cs, hex, reg, type, o, d, ts, ts, pt]);
+    else { e[9] = Math.max(e[9], ts); e[10] += ';' + pt; e[4] ??= reg; e[5] ??= type; e[6] ??= o; e[7] ??= d; }
+  }
+  const c = cols(11), maxT = results[results.length - 1].t, rows = [...by.values()];
+  const stmts = [];
+  for (let i = 0; i < rows.length; i += 400)   // keep each bound JSON param modest
+    // WHERE true: required so SQLite does not read ON CONFLICT as a join clause after INSERT ... SELECT
+    stmts.push(env.DB.prepare(`INSERT INTO flights (key, day, cs, hex, reg, type, o, d, first, last, track)
+      SELECT ${c.join(', ')} FROM json_each(?) WHERE true
+      ON CONFLICT(key) DO UPDATE SET last = excluded.last, track = flights.track || ';' || excluded.track`).bind(JSON.stringify(rows.slice(i, i + 400))));
+  stmts.push(env.DB.prepare('DELETE FROM snap WHERE t <= ?').bind(maxT));
+  await env.DB.batch(stmts);
+  return rows.length;
+}
+
+// housekeeping: prune rate-limit buckets every run; daily purge of old shares/flights + cached row count for /status
 async function tidy(env) {
   const now = Math.floor(Date.now() / 1000), stmts = [env.DB.prepare('DELETE FROM rl WHERE t < ?').bind(Math.floor(now / 3600) - 2)];
-  if (new Date().getUTCMinutes() < 10) {
+  if (new Date().getUTCHours() === 20 && new Date().getUTCMinutes() < 10) {   // once a day, 01:30 IST
     const old = now - SHARE_TTL;
     stmts.push(env.DB.prepare('DELETE FROM share_pts WHERE id IN (SELECT id FROM share WHERE created < ?)').bind(old),
       env.DB.prepare('DELETE FROM share_cnt WHERE id IN (SELECT id FROM share WHERE created < ?)').bind(old),
@@ -123,7 +144,7 @@ export default {
     if (u.pathname === '/status') return cached(ctx, 'status', 60, async () => {
       const {results} = await env.DB.prepare("SELECT k, v FROM meta WHERE k IN ('since', 'last_run', 'count')").all();
       const m = Object.fromEntries(results.map(r => [r.k, r.v]));
-      return json({since: m.since, last_run: m.last_run, flights_recorded: m.count != null ? +m.count : null});   // count refreshed hourly by cron
+      return json({since: m.since, last_run: m.last_run, flights_recorded: m.count != null ? +m.count : null});   // count refreshed daily by cron
     });
     if (u.pathname === '/run' && await keyOk(keyOf(req), env.RUN_KEY)) return json(await record(env), 200, {...base, 'Cache-Control': 'no-store'});
     return json({error: 'not found', endpoints: ['/flight?cs=', '/airport?icao=&day=', '/status', '/opensky']}, 404);
