@@ -17,6 +17,7 @@ Installable as a PWA. Runs entirely on free tiers.
 - **Airports**: runways, live METAR, boards (arrivals, departures, on ground, nearby, earlier).
 - **3D India** (Three.js): terrain + imagery, live EUMETSAT infrared clouds, chase / cockpit / orbit cameras. `/globe` is the CesiumJS version.
 - **Flights panel**: sortable list, filters, fleet per airline, bookmarks, recently viewed.
+- **Interface**: one stylesheet (`public/app.css`) for every app page. Brand and search top left, tools top right (a bottom dock on phones), altitude scope bottom left with data sources behind its ⓘ.
 - **2D map extras**: aircraft silhouettes by type (jet, widebody, turboprop, light, helicopter), trails coloured by altitude,
   squawk 7500 / 7600 / 7700 alert banner with a pulsing beacon, shareable URLs (`/map?ll=lat,lon,zoom&sel=hex`),
   keyboard shortcuts (`?` lists them), and **replay**: the device keeps the last 3 h of snapshots in IndexedDB and scrubs back through them.
