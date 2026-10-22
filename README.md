@@ -7,6 +7,13 @@ Installable as a PWA. Runs entirely on free tiers.
 
 **Live:** https://blackrhino.in · MIT licensed · Not for navigation.
 
+| Live radar | 3D: real Delhi airport |
+|---|---|
+| ![2D radar over India](.github/screens/map.jpg) | ![Delhi IGI from OpenStreetMap in 3D](.github/screens/airport-delhi.jpg) |
+| **Following a landing (chase)** | **Cockpit view** |
+| ![A320 on final into Delhi](.github/screens/3d-approach.jpg) | ![Captain's view on final](.github/screens/cockpit.jpg) |
+
+
 ## Features
 
 - **Live aircraft** from [adsb.fi](https://adsb.fi) (12 areas over India) and [adsb.lol](https://adsb.lol), plus
@@ -15,7 +22,10 @@ Installable as a PWA. Runs entirely on free tiers.
 - **Flight card** with ~40 fields when available: route and progress, ETA (IST), airline, registration, type, photo,
   autopilot targets, wind, temperature, squawk, ADS-B integrity.
 - **Airports**: runways, live METAR, boards (arrivals, departures, on ground, nearby, earlier).
-- **3D India** (Three.js): terrain + imagery, live EUMETSAT infrared clouds, chase / cockpit / orbit cameras. `/globe` is the CesiumJS version.
+- **3D India** (Three.js): terrain and imagery that sharpen around the camera, live EUMETSAT infrared clouds, real sun.
+  Real layouts of 141 Indian airports from OpenStreetMap (runways with ICAO markings, taxiways, aprons, terminals).
+  The followed aircraft is an articulated A320 (gear, flaps, spoilers, reversers, lights) in ~20 airline liveries,
+  with chase, cockpit and orbit cameras. Demos: `/3d?demo=landing`, `/3d?demo=takeoff`. `/globe` is the CesiumJS version.
 - **Flights panel**: sortable list, filters, fleet per airline, bookmarks, recently viewed.
 - **Interface**: one stylesheet (`public/app.css`) for every app page. Brand and search top left, tools top right (a bottom dock on phones), altitude scope bottom left with data sources behind its ⓘ.
 - **2D map extras**: aircraft silhouettes by type (jet, widebody, turboprop, light, helicopter), trails coloured by altitude,
