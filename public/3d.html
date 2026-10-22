@@ -46,12 +46,12 @@ body.has-flight #watchBar{display:none}
   <span class="seg"><a href="/map">2D</a><a class="on" href="/3d">3D</a></span>
 </nav>
 <div id="info" class="hud"><span id="close">×</span>
-  <div class="btns" style="margin:0 0 10px;display:flex;gap:6px;flex-wrap:wrap"><button data-cam="chase">Chase</button><button data-cam="cockpit">Cockpit</button><button data-cam="orbit">Orbit</button><button data-cam="free">Free</button></div>
+  <div class="btns" style="margin:0 0 10px;display:flex;gap:6px;flex-wrap:wrap"><button data-cam="chase">Chase</button><button data-cam="cockpit">Cockpit</button><button data-cam="orbit">Orbit</button></div>
   <div id="infoBody"></div>
 </div>
 <div id="fhud" class="hud">
   <div class="fh-top"><span class="dot"></span><b id="hCs">-</b><span id="hAl" class="stat"></span><span id="hSt"></span>
-    <span class="fh-cams"><button data-cam="chase">Chase</button><button data-cam="cockpit">Cockpit</button><button data-cam="orbit">Orbit</button><button data-cam="free">Free</button><button id="hDet">Details</button></span></div>
+    <span class="fh-cams"><button data-cam="chase">Chase</button><button data-cam="cockpit">Cockpit</button><button data-cam="orbit">Orbit</button><button id="hDet">Details</button></span></div>
   <div class="fh-route"><b id="hO">-</b><div class="fh-bar"><i id="hBar"></i><em id="hPlane">✈</em></div><b id="hD">-</b></div>
   <div class="fh-grid">
     <div><small>Altitude</small><b id="hAlt">-</b><span>ft</span></div>
@@ -760,7 +760,7 @@ function frame(t) {
       const dist = camera.position.distanceTo(V.set(p.x, p.y, p.z));
       const hs = Math.max(1, dist * 0.6) * sz * 1.2;
       poseMatrix(p, hs * 0.001, M); M.decompose(selMesh.position, selMesh.quaternion, selMesh.scale);   // hero model is in metres
-      selMesh.visible = camMode !== 'cockpit';
+      selMesh.visible = true; hero.pov(camMode === 'cockpit');
       hero.update(heroState(p, fdt), fdt, t / 1000);
       // keep the callsign clear of the model: lift it by the plane's on-screen size, with a leader line
       const px = 21 * hs * 0.001 / Math.max(dist, 1e-4) * (innerHeight / 2) / Math.tan(camera.fov * R / 2);
@@ -789,9 +789,12 @@ function frame(t) {
           const delta = tgt.clone().sub(controls.target); camera.position.add(delta); controls.target.copy(tgt);
           const off = camera.position.clone().sub(tgt); off.applyAxisAngle(new THREE.Vector3(0, 1, 0), 0.12 * fdt); camera.position.copy(tgt).add(off);
         } else if (camMode === 'cockpit') {
-          const hd = p.hdg * R, fwd = new THREE.Vector3(Math.sin(hd), Math.tan(p.pit), -Math.cos(hd));
-          camera.position.set(tgt.x + fwd.x * 0.02, tgt.y + 0.002, tgt.z + fwd.z * 0.02);
-          controls.target.copy(camera.position).addScaledVector(fwd, 0.5);
+          // the captain's eyes: inside the model, looking out through the windscreen; the horizon banks and pitches with the aircraft
+          selMesh.updateMatrixWorld(true);
+          camera.position.copy(hero.eye).applyMatrix4(selMesh.matrixWorld);
+          controls.target.copy(hero.look).applyMatrix4(selMesh.matrixWorld);
+          camera.up.set(0, 1, 0).applyQuaternion(selMesh.quaternion);
+          camera.lookAt(controls.target);
         }
       }
     } else selMesh.visible = false;
@@ -802,6 +805,10 @@ function frame(t) {
   if (t - sunT > 2000) { sunT = t; updateSun(); }
   if (t - (window.__veT || 0) > 900 && !flyT) { window.__veT = t; applyVE(false); }
   updateDetail(t);
+  const wantNear = camMode === 'cockpit' && selected ? 0.00005 : 0.005;
+  const wantFov = camMode === 'cockpit' && selected ? 70 : 48;   // pilots see wide: ~70 deg in the cockpit
+  if (camera.near !== wantNear || camera.fov !== wantFov) { camera.near = wantNear; camera.fov = wantFov; camera.updateProjectionMatrix(); }
+  if (camMode !== 'cockpit' && camera.up.y !== 1) camera.up.set(0, 1, 0);
   if (camMode !== 'cockpit') controls.update();
   renderer.render(scene, camera);
   labelR.render(scene, camera);

@@ -52,7 +52,9 @@ export function makeAirliner(THREE, opt = {}) {
   const rAt = z => { for (let i = 0; i < L.length - 1; i++) { const [z0, r0] = L[i], [z1, r1] = L[i + 1]; if (z <= z0 && z >= z1) return r0 + (r1 - r0) * (z - z0) / (z1 - z0); } return 0; };
   const noseK = z => Math.min(1, Math.max(0, (z - 13) / 5.9));
   const drop = z => .38 * noseK(z) ** 2 - (z < -9 ? ((-9 - z) / 9.7) ** 1.6 * 1.05 : 0);   // + = lowered
-  const deformY = (y, z) => (y < 0 ? y * (1 - .28 * noseK(z)) : y) - drop(z);
+  // upper nose falls away steeply ahead of the windscreen (pilots look over it, as on the real aircraft)
+  const droop = z => Math.min(1, Math.max(0, (z - 17.2) / 1.7)) ** 1.4;
+  const deformY = (y, z) => (y < 0 ? y * (1 - .28 * noseK(z)) : y * (1 - .62 * droop(z))) - drop(z);
   { const p = fus.attributes.position;
     for (let i = 0; i < p.count; i++) p.setY(i, deformY(p.getY(i), p.getZ(i)));
     fus.computeVertexNormals(); }
@@ -73,7 +75,7 @@ export function makeAirliner(THREE, opt = {}) {
   fus.setAttribute('color', new THREE.Float32BufferAttribute(new Float32Array(fus.attributes.position.count * 3), 3));
   add(root, fus, paint);
   // cockpit: the fuselage opens where the windscreen is; a glass shell of the same shape fills the opening
-  const inScreen = '(vLoc.z > 16.3 && vLoc.z < 18.0 && (vLoc.y + .38 * pow(clamp((vLoc.z - 13.) / 5.9, 0., 1.), 2.)) > 0.5 + (vLoc.z - 16.3) * 0.05 && (vLoc.y + .38 * pow(clamp((vLoc.z - 13.) / 5.9, 0., 1.), 2.)) < 1.28 - (vLoc.z - 16.3) * 0.1 && abs(vLoc.x) > 0.05 && abs(vLoc.x) < 1.6)';
+  const inScreen = '(vLoc.z > 16.2 && vLoc.z < 18.12 && (vLoc.y + .38 * pow(clamp((vLoc.z - 13.) / 5.9, 0., 1.), 2.)) > 0.42 + (vLoc.z - 16.2) * 0.04 && (vLoc.y + .38 * pow(clamp((vLoc.z - 13.) / 5.9, 0., 1.), 2.)) < 1.45 - (vLoc.z - 16.2) * 0.12 && abs(vLoc.x) > 0.03 && abs(vLoc.x) < 1.65)';
   const cut = (mat, keepInside) => { mat.onBeforeCompile = sh => {
     sh.vertexShader = 'varying vec3 vLoc;\n' + sh.vertexShader.replace('#include <begin_vertex>', '#include <begin_vertex>\nvLoc = position;');
     sh.fragmentShader = 'varying vec3 vLoc;\n' + sh.fragmentShader.replace('void main() {', `void main() {
@@ -85,7 +87,7 @@ export function makeAirliner(THREE, opt = {}) {
   { // window frame posts
     const post = M(0x20262c, .5, .3);
     for (const [x, z, ry] of [[0, 17.75, 0], [.62, 17.45, .5], [-.62, 17.45, -.5], [1.12, 16.9, 1.0], [-1.12, 16.9, -1.0]]) {
-      const g = new THREE.BoxGeometry(.06, .55, .05); const m = add(root, g, post, x * .96, .86 - drop(z), z - .05);
+      const g = new THREE.BoxGeometry(.035, .62, .03); const m = add(root, g, post, x * .97, .9 - drop(z), z - .04);
       m.rotation.set(-0.45 + Math.abs(x) * .3, ry, 0);
     }
   }
@@ -139,6 +141,9 @@ export function makeAirliner(THREE, opt = {}) {
     const w2 = add(cock, new THREE.PlaneGeometry(.55, .36), glass, s * 1.18, .6, 16.55); w2.rotation.set(-0.3, s * 1.15, 0);
   }
   cock.children.forEach(c => c.position.y -= drop(c.position.z));
+  // the captain (left seat, +X): hidden when the camera takes his eyes
+  const captain = cock.children.filter(c => c.position.x > .25 && c.position.x < .75 && c.position.y > .1 - drop(16.3) && c.position.z < 16.55);
+  const eye = new THREE.Vector3(.48, .82 - drop(16.15), 16.12), look = new THREE.Vector3(.48, .72 - drop(18), 19.6);
 
   // ---------- wings: swept, tapered, cambered shell with dihedral ----------
   const ROOT_X = 1.8, TIP_X = 17.1, LE0 = 4.2, SWEEP = Math.tan(25 * deg), C0 = 6.4, C1 = 1.55, Y0 = -1.15, DIH = Math.tan(5.5 * deg);
@@ -405,5 +410,5 @@ export function makeAirliner(THREE, opt = {}) {
     sharkM.color.setHex(lv.tail); engM.color.setHex(lv.engine); belly.color.setHex(lv.belly); solidPaint.color.setHex(lv.body);
   }
   setLivery(opt.livery || DEFAULT_LIVERY);
-  return {root, update, state: S, setLivery};
+  return {root, update, state: S, setLivery, eye, look, pov: on => captain.forEach(c => c.visible = !on)};
 }
