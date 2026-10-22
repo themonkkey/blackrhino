@@ -1,0 +1,13 @@
+data/
+cache/
+worker/
+server.py
+wrangler.jsonc
+.wrangler/
+.claude/
+film/
+history-worker/
+relay/
+docs/
+.env*
+eta/

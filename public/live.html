@@ -1,0 +1,171 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+<meta name="theme-color" content="#05070d">
+<link rel="manifest" href="manifest.webmanifest">
+<link rel="icon" type="image/png" href="icons/favicon-32.png">
+<link rel="apple-touch-icon" href="icons/apple-touch-icon.png">
+<title>BlackRhino · Live flight</title>
+<script>if ('serviceWorker' in navigator) navigator.serviceWorker.register('sw.js');</script>
+<link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/leaflet/1.9.4/leaflet.min.css" integrity="sha512-h9FcoyWjHcOcmEVkxOfTLnmZFWIH0iZhZT1H2TbOq55xssQGEJHEaIm+PgoUaZbRvQTNTluNOEfb1ZRy6D3BOw==" crossorigin="anonymous">
+<script src="https://cdnjs.cloudflare.com/ajax/libs/leaflet/1.9.4/leaflet.min.js" integrity="sha512-puJW3E/qXDqYp9IfhAI54BJEaWIfloJ7JWs7OeD5i6ruC9JZL1gERT1wjtwXFlh7CjE7ZJ+/vcRZRkIYIb6p4g==" crossorigin="anonymous"></script>
+<script src="config.js"></script>
+<script src="shared.js"></script>
+<link rel="preconnect" href="https://fonts.googleapis.com"><link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Montserrat+Alternates:wght@400;500;600&family=Montserrat:wght@400;500;600;700&family=JetBrains+Mono:wght@400;500&display=swap">
+<link rel="stylesheet" href="premium.css">
+<link rel="stylesheet" href="blackrhino.css">
+<style>
+html,body{margin:0;height:100%;background:#05070d;color:var(--ink);overflow:hidden}
+#map{position:absolute;inset:0;background:#05070d}
+.hud{position:absolute;z-index:500}
+#card{left:12px;top:12px;width:360px;padding:16px 18px;max-width:calc(100% - 24px)}
+#card h2{margin:0;font-size:22px;font-weight:700;letter-spacing:-.02em}
+#card .who{color:var(--ink-2);font-size:13px;margin-top:2px}
+.route{display:grid;grid-template-columns:auto 1fr auto;gap:12px;align-items:center;margin:14px 0 10px}
+.route b{font-size:22px;font-weight:700}.route span{display:block;font-size:11px;color:var(--mute)}
+.line{height:3px;border-radius:2px;background:rgba(255,255,255,.12);position:relative}
+.line i{position:absolute;inset:0 auto 0 0;border-radius:2px;background:var(--acc-grad)}
+.line em{position:absolute;top:50%;transform:translate(-50%,-55%) rotate(90deg);font-style:normal;color:#fff;filter:drop-shadow(0 0 6px rgba(124,200,255,.8))}
+.tiles{display:grid;grid-template-columns:repeat(3,1fr);gap:6px;margin-top:10px}
+.tile{background:rgba(255,255,255,.035);border:1px solid var(--stroke);border-radius:10px;padding:8px 10px}
+.tile small{display:block;font-size:9.5px;letter-spacing:.12em;color:var(--mute);font-weight:600}
+.tile b{display:block;font:600 16px var(--mono);margin-top:2px}
+.src{margin-top:10px;font-size:12px;color:var(--mute);line-height:1.5}
+.links{display:flex;gap:6px;margin-top:12px;flex-wrap:wrap}
+.links a,.links button{flex:1;text-align:center;text-decoration:none;color:var(--ink);background:rgba(255,255,255,.06);border:1px solid var(--stroke);border-radius:999px;padding:8px 10px;font:600 12.5px var(--font);cursor:pointer;white-space:nowrap}
+.links .on{background:var(--acc-grad);color:#02101c;border-color:transparent}
+.plane svg{filter:drop-shadow(0 0 6px rgba(0,0,0,.7))}
+.leaflet-container{background:#05070d}
+@media(max-width:700px){#card{left:8px;right:8px;top:auto;bottom:calc(8px + env(safe-area-inset-bottom));width:auto}}
+</style>
+</head>
+<body>
+<div id="map"></div>
+<div id="card" class="hud">
+  <div style="display:flex;justify-content:space-between;align-items:flex-start;gap:8px">
+    <div><h2 id="title">Live flight</h2><div class="who" id="who">connecting…</div></div>
+    <span class="chip" id="state">…</span>
+  </div>
+  <div class="route"><div><b id="o">-</b><span id="oc"></span></div>
+    <div class="line"><i id="bar"></i><em id="pl">✈</em></div>
+    <div style="text-align:right"><b id="d">-</b><span id="dc"></span></div></div>
+  <div class="tiles">
+    <div class="tile"><small>ALTITUDE</small><b id="alt">-</b></div>
+    <div class="tile"><small>SPEED</small><b id="spd">-</b></div>
+    <div class="tile"><small>ETA (IST)</small><b id="eta">-</b></div>
+  </div>
+  <div class="src" id="src"></div>
+  <div class="links"><button id="follow" class="on">Follow</button><a id="l3d" href="#">3D view</a><a href="/map">All flights</a></div>
+</div>
+<script>
+const SHARE = (window.BR_CONFIG || {}).historyApi + '/share/';
+const id = new URLSearchParams(location.search).get('s');
+const IST = {timeZone: 'Asia/Kolkata', hour: '2-digit', minute: '2-digit', hour12: false};
+const $ = x => document.getElementById(x);
+const map = L.map('map', {zoomControl: false, attributionControl: true}).setView([26.8, 80], 6);
+L.control.zoom({position: 'bottomright'}).addTo(map);
+L.tileLayer('https://server.arcgisonline.com/ArcGIS/rest/services/World_Imagery/MapServer/tile/{z}/{y}/{x}', {maxZoom: 18, attribution: 'Esri · GPS: shared phone · radar: adsb.fi, adsb.lol, OpenSky'}).addTo(map);
+L.tileLayer('https://server.arcgisonline.com/ArcGIS/rest/services/Reference/World_Boundaries_and_Places/MapServer/tile/{z}/{y}/{x}', {maxZoom: 18, opacity: .8}).addTo(map);
+const gpsLine = L.polyline([], {color: '#34d399', weight: 4, opacity: .95}).addTo(map);
+const radarLine = L.polyline([], {color: '#7cc8ff', weight: 3, opacity: .8, dashArray: '2 6'}).addTo(map);
+const estLine = L.polyline([], {color: '#fde68a', weight: 2, opacity: .8, dashArray: '8 8'}).addTo(map);
+const PLANE = c => `<svg width="34" height="34" viewBox="0 0 24 24" style="transform:rotate(var(--r))"><path d="M12 2c.8 0 1.3.9 1.3 2v5.2l7.7 4.6v2l-7.7-2.4v4.8l2.3 1.7V21L12 20l-3.6 1v-1.1l2.3-1.7v-4.8L3 15.8v-2l7.7-4.6V4c0-1.1.5-2 1.3-2z" fill="${c}" stroke="#000" stroke-width=".7"/></svg>`;
+const marker = L.marker([0, 0], {icon: L.divIcon({className: 'plane', html: PLANE('#7cc8ff'), iconSize: [34, 34], iconAnchor: [17, 17]}), opacity: 0}).addTo(map);
+let gps = [], meta = {}, radar = null, radarPts = [], follow = true, fitted = false, lastGpsT = 0;
+$('follow').onclick = () => { follow = !follow; $('follow').classList.toggle('on', follow); };
+map.on('dragstart', () => { follow = false; $('follow').classList.remove('on'); });
+
+// airports for routes, runways and estimates
+fetch('airports.json').then(r => r.json()).then(list => { FT.airports = list; for (const a of list) FT.byIcao[a.icao] = a; });
+
+async function pollShare() {
+  if (!id) { $('who').textContent = 'No share id in this link.'; return; }
+  try {
+    const j = await fetch(`${SHARE}${id}?since=${lastGpsT}`).then(r => r.json());
+    if (j.error) { $('who').textContent = 'This share link is not valid.'; return; }
+    meta = j.meta || {};
+    for (const p of j.pts) { gps.push(p); lastGpsT = Math.max(lastGpsT, p[0]); }
+    gpsLine.setLatLngs(gps.map(p => [p[1], p[2]]));
+    $('title').textContent = meta.callsign || 'Live flight';
+    $('who').textContent = `${meta.name ? meta.name + "'s flight" : 'Shared flight'}${meta.ended ? ' · sharing ended' : ''}`;
+    $('l3d').href = meta.callsign ? `/3d?flight=${meta.callsign}` : '/3d';
+    if (!fitted && gps.length > 1) { map.fitBounds(gpsLine.getBounds(), {padding: [60, 60], maxZoom: 13}); fitted = true; }
+  } catch (e) {}
+}
+async function pollRadar() {
+  if (!meta.callsign) return;
+  try {
+    const j = await fetch('/api/hex?cs=' + meta.callsign).then(r => r.ok ? r.json() : null);
+    if (j && j.ac && j.ac.length) {
+      const d = j.ac[0];
+      if (!radar || d.ts > radar.ts) { FT.attach(d); radar = d; radarPts.push([d.lat, d.lon]); radarLine.setLatLngs(radarPts); }
+    } else if (radar && !radar.d) FT.attach(radar);   // keep trying to learn the route for estimates
+  } catch (e) {}
+}
+
+// best position right now: live GPS > radar (dead-reckoned) > modelled approach > last known
+function project(lat, lon, trk, kt, dt) {
+  const R = Math.PI / 180, d = kt * 0.514444 * dt / 6371000, b = trk * R, p1 = lat * R, l1 = lon * R;
+  const p2 = Math.asin(Math.sin(p1) * Math.cos(d) + Math.cos(p1) * Math.sin(d) * Math.cos(b));
+  const l2 = l1 + Math.atan2(Math.sin(b) * Math.sin(d) * Math.cos(p1), Math.cos(d) - Math.sin(p1) * Math.sin(p2));
+  return [p2 / R, l2 / R];
+}
+function current() {
+  const now = Date.now() / 1000, g = gps[gps.length - 1];
+  const gAge = g ? now - g[0] : Infinity, rAge = radar ? now - radar.ts : Infinity;
+  if (g && gAge < 45) return {src: 'gps', lat: g[1], lon: g[2], altFt: g[3] != null ? g[3] * 3.28084 : null, kt: g[4] != null ? g[4] * 1.94384 : null, trk: g[5], age: gAge};
+  if (radar && rAge < 90) {
+    const [la, lo] = radar.ground ? [radar.lat, radar.lon] : project(radar.lat, radar.lon, radar.track, radar.gs, Math.min(rAge, 60));
+    return {src: 'radar', lat: la, lon: lo, altFt: radar.ground ? 0 : radar.alt, kt: radar.gs, trk: radar.track, age: rAge, ground: radar.ground};
+  }
+  // silent: model the rest of the flight from the freshest record that knows its destination
+  const base = radar && radar.d ? radar : null;
+  if (base && !base.ground) {
+    const v = FT.virtual(base, now);
+    if (v) return {src: 'est', lat: v.lat, lon: v.lon, altFt: v.alt, kt: v.gs, trk: v.track, age: rAge, est: v.est};
+  }
+  if (g) return {src: 'last-gps', lat: g[1], lon: g[2], altFt: g[3] != null ? g[3] * 3.28084 : null, kt: g[4] != null ? g[4] * 1.94384 : null, trk: g[5], age: gAge};
+  if (radar) return {src: 'last-radar', lat: radar.lat, lon: radar.lon, altFt: radar.alt, kt: radar.gs, trk: radar.track, age: rAge};
+  return null;
+}
+const ago = s => s < 90 ? `${Math.round(s)} s ago` : s < 5400 ? `${Math.round(s / 60)} min ago` : `${(s / 3600).toFixed(1)} h ago`;
+function render() {
+  const c = current();
+  if (!c) { $('state').textContent = 'waiting for data'; return; }
+  marker.setLatLng([c.lat, c.lon]).setOpacity(1);
+  const col = c.src === 'gps' ? '#34d399' : c.src === 'radar' ? '#7cc8ff' : c.src === 'est' ? '#fde68a' : '#9ca3af';
+  marker.getElement() && (marker.getElement().innerHTML = PLANE(col).replace('var(--r)', `${c.trk || 0}deg`));
+  if (follow) map.panTo([c.lat, c.lon], {animate: true, duration: 0.8});
+  const labels = {gps: ['Live · phone GPS', 'st-dep'], radar: ['Live · radar', 'st-dep'], est: [c.est && c.est.ground ? `Landed${c.est.rwy ? ' RWY ' + c.est.rwy : ''} (estimated)` : `Estimated${c.est && c.est.phase === 'final' ? ' · final approach' : ''}`, 'st-app'],
+    'last-gps': ['No signal · phone offline', 'st-gate'], 'last-radar': ['No signal', 'st-gate']};
+  const [lab, cls] = labels[c.src];
+  $('state').textContent = lab; $('state').className = 'chip ' + cls;
+  $('alt').textContent = c.altFt == null ? '-' : c.altFt < 100 && (c.kt || 0) < 50 ? 'GND' : Math.round(c.altFt).toLocaleString('en-IN') + ' ft';
+  $('spd').textContent = c.kt == null ? '-' : Math.round(c.kt) + ' kt';
+  // route and ETA (from the flight's route if known)
+  // route from the radar record, or straight from the callsign (looked up on this device) when radar has not seen it yet
+  let rd = radar || {};
+  if (!rd.d && meta.callsign) { const r = {flight: meta.callsign, hex: 'share-' + id, lat: c.lat, lon: c.lon}; FT.attach(r); if (r.d) rd = {...rd, o: r.o, d: r.d}; }
+  const o = FT.apt(rd.o), t = FT.apt(rd.d);
+  if (o && t) {
+    $('o').textContent = o.iata || o.icao; $('oc').textContent = o.city || ''; $('d').textContent = t.iata || t.icao; $('dc').textContent = t.city || '';
+    const a = FT.km(o.lat, o.lon, c.lat, c.lon), b = FT.km(c.lat, c.lon, t.lat, t.lon), pct = Math.max(0, Math.min(100, a / (a + b) * 100));
+    $('bar').style.width = pct + '%'; $('pl').style.left = pct + '%';
+    const etaS = c.est ? c.est.landT : c.kt > 60 ? Date.now() / 1000 + b / (c.kt * 1.852) * 3600 + 360 : null;
+    $('eta').textContent = etaS ? new Date(etaS * 1000).toLocaleTimeString('en-IN', IST) : '-';
+    if (c.src === 'est' && c.est) estLine.setLatLngs([[rd.lat, rd.lon], [c.lat, c.lon]]);
+  }
+  $('src').innerHTML = [
+    gps.length ? `Phone GPS: ${gps.length.toLocaleString('en-IN')} points, last ${ago(Date.now() / 1000 - gps[gps.length - 1][0])}` : 'Phone GPS: no points yet (uploads when the phone is online)',
+    meta.callsign ? `Radar (${meta.callsign}): ${radar ? 'last fix ' + ago(Date.now() / 1000 - radar.ts) : 'not seen yet'}` : '',
+    c.src === 'est' ? 'Position is modelled from the last radar fix (no coverage near the airport).' : ''].filter(Boolean).join('<br>');
+}
+pollShare(); setInterval(pollShare, 5000);
+setTimeout(() => { pollRadar(); setInterval(pollRadar, 5000); }, 800);
+setInterval(render, 1000);
+</script>
+</body>
+</html>

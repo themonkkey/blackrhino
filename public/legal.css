@@ -1,0 +1,27 @@
+/* Legal / credits pages: same system as the landing page */
+:root{--bg:#030405;--ink:#eef5fa;--ink-2:#a9b8c4;--mute:#5f6d79;--sky:#7cc8ff;--line:rgba(124,200,255,.13);--beacon:#ff3b2f;
+  --disp:'Montserrat Alternates',ui-sans-serif,sans-serif;--sans:'Montserrat',ui-sans-serif,-apple-system,sans-serif;--mono:'JetBrains Mono',ui-monospace,monospace}
+*{box-sizing:border-box}
+html,body{margin:0;background:var(--bg);color:var(--ink);font:400 16px/1.7 var(--sans);-webkit-font-smoothing:antialiased}
+a{color:var(--sky);text-decoration:none}a:hover{text-decoration:underline}
+.wrap{max-width:760px;margin:0 auto;padding:0 20px}
+header{padding:22px 0;border-bottom:1px solid var(--line);margin-bottom:56px}
+header .wrap{display:flex;justify-content:space-between;align-items:center;max-width:960px}
+.wm{display:inline-flex;align-items:center;gap:10px;font:500 21px/1 var(--disp);letter-spacing:-.025em;color:var(--ink)}
+.wm svg{width:32px;height:32px;fill:var(--ink)}
+.dot{display:inline-block;width:5px;height:5px;border-radius:50%;background:var(--beacon);margin-left:2px;transform:translateY(5px)}
+header nav{display:flex;gap:22px;font:500 13.5px var(--sans)}header nav a{color:var(--ink-2)}
+.lbl{font:600 11px var(--sans);letter-spacing:.22em;text-transform:uppercase;color:var(--sky)}
+h1{font:400 clamp(40px,7vw,72px)/.95 var(--disp);letter-spacing:-.05em;margin:14px 0 10px;text-transform:lowercase}
+.upd{font:400 12px var(--mono);color:var(--mute);margin-bottom:44px}
+h2{font:500 24px/1.2 var(--disp);letter-spacing:-.03em;margin:46px 0 10px;text-transform:lowercase}
+p,li{color:var(--ink-2)}li{margin:6px 0}
+strong{color:var(--ink);font-weight:600}
+.box{border:1px solid var(--line);border-top:2px solid var(--sky);padding:18px 20px;margin:24px 0;background:rgba(124,200,255,.03)}
+table{width:100%;border-collapse:collapse;font-size:14.5px;margin:12px 0}
+td,th{text-align:left;padding:10px 8px;border-bottom:1px solid var(--line);vertical-align:top}
+th{font:600 10px var(--sans);letter-spacing:.18em;text-transform:uppercase;color:var(--mute)}
+td:first-child{color:var(--ink);white-space:nowrap}
+code{font:400 13px var(--mono);color:var(--ink)}
+footer{margin-top:90px;border-top:1px solid var(--line);padding:26px 0 40px;color:var(--mute);font-size:13px}
+footer .wrap{display:flex;justify-content:space-between;gap:18px;flex-wrap:wrap;max-width:960px}footer a{color:var(--ink-2)}

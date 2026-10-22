@@ -1,0 +1,168 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+<meta name="theme-color" content="#05070d">
+<link rel="manifest" href="manifest.webmanifest">
+<link rel="icon" type="image/png" href="icons/favicon-32.png">
+<link rel="apple-touch-icon" href="icons/apple-touch-icon.png">
+<title>BlackRhino · Share my flight</title>
+<script>if ('serviceWorker' in navigator) navigator.serviceWorker.register('sw.js');</script>
+<style>
+:root{--bg:#05070d;--ink:#eef2f9;--mute:#7c879b;--line:rgba(255,255,255,.09);--acc:#7cc8ff;--ok:#34d399;--warn:#fbbf24;--bad:#f87171}
+*{box-sizing:border-box}html,body{margin:0;background:radial-gradient(ellipse at top,#121a2c 0%,#05070d 60%);color:var(--ink);min-height:100%;
+  font:15px/1.45 Inter,ui-sans-serif,-apple-system,"Segoe UI",sans-serif;-webkit-font-smoothing:antialiased}
+.wrap{max-width:520px;margin:0 auto;padding:calc(18px + env(safe-area-inset-top)) 18px calc(28px + env(safe-area-inset-bottom))}
+.brand{display:flex;align-items:center;gap:10px;font-weight:700;font-size:17px;margin-bottom:18px}
+.logo{width:30px;height:30px;border-radius:9px;background:linear-gradient(135deg,#c4e7ff,#4aa8f0);display:grid;place-items:center}
+.logo svg{width:22px;height:22px;fill:#02101c}
+.card{background:rgba(255,255,255,.04);border:1px solid var(--line);border-radius:18px;padding:16px;margin-bottom:14px}
+h1{font-size:24px;margin:0 0 4px;letter-spacing:-.02em}
+.sub{color:var(--mute);font-size:13.5px}
+label{display:block;font-size:12px;color:var(--mute);margin:12px 0 5px;letter-spacing:.04em;text-transform:uppercase}
+input{width:100%;background:rgba(255,255,255,.05);border:1px solid var(--line);border-radius:12px;padding:12px 14px;color:var(--ink);font:600 16px inherit;font-family:inherit}
+.big{width:100%;border:0;border-radius:16px;padding:18px;font:700 17px inherit;font-family:inherit;cursor:pointer;margin-top:14px;
+  background:linear-gradient(135deg,#c4e7ff,#4aa8f0);color:#02101c;box-shadow:0 10px 30px rgba(47,141,228,.3)}
+.big.stop{background:rgba(248,113,113,.15);color:#fecaca;border:1px solid rgba(248,113,113,.45);box-shadow:none}
+.row{display:flex;justify-content:space-between;align-items:center;padding:9px 0;border-bottom:1px solid var(--line);font-size:14px}
+.row:last-child{border:0}.row span{color:var(--mute)}.row b{font-variant-numeric:tabular-nums}
+.pill{display:inline-flex;align-items:center;gap:7px;padding:5px 11px;border-radius:999px;font-size:12.5px;font-weight:600;background:rgba(255,255,255,.06)}
+.pill::before{content:"";width:7px;height:7px;border-radius:50%;background:currentColor;box-shadow:0 0 8px currentColor}
+.ok{color:var(--ok)}.warn{color:var(--warn)}.bad{color:var(--bad)}
+.link{display:flex;gap:8px;margin-top:10px}.link input{font:500 13px ui-monospace,monospace}
+.link button,.ghost{border:1px solid var(--line);background:rgba(255,255,255,.06);color:var(--ink);border-radius:12px;padding:0 14px;font:600 14px inherit;font-family:inherit;cursor:pointer}
+.ghost{width:100%;padding:13px;margin-top:10px}
+ol{padding-left:20px;margin:6px 0 0;color:#cdd5e3;font-size:13.5px}ol li{margin:5px 0}
+.hide{display:none}
+</style>
+</head>
+<body>
+<div class="wrap">
+  <div class="brand"><span class="logo"><svg viewBox="0 0 64 64"><path d="M5 31C5 23 11 18 20 18L32 18C35 18 37.5 18.8 39.5 20.5L40 15.8C40.3 14 42.6 13.8 43 15.6L43.6 21.6C46.5 23.5 48.5 26.5 50 29.5L51.3 26.4L53.2 31C55.5 27.5 58.2 22.5 61.5 19C61 25.5 59.5 31.5 57.5 35.5C59.2 37.5 59.7 40.5 58.8 43.2C56.3 45.7 51.2 45.8 47.6 44.2L44.6 45.4L44 54L37.4 54L37 48L21 48L20.5 54L13.8 54L13.2 46.2C8 43.8 5 38.2 5 31Z"/></svg></span>BlackRhino</div>
+
+  <div class="card" id="setup">
+    <h1>Share my flight</h1>
+    <div class="sub">Your phone's GPS tracks the flight. Anyone with the link can watch. Works in airplane mode: the path is saved on the phone and uploads as soon as there is any connection.</div>
+    <label for="cs">Flight callsign (from the airline or Flightradar24)</label>
+    <input id="cs" placeholder="e.g. ABC123" autocapitalize="characters" autocomplete="off">
+    <label for="nm">Your name (shown to viewers, optional)</label>
+    <input id="nm" placeholder="e.g. Sam" autocomplete="off">
+    <button class="big" id="start">Start sharing</button>
+    <p style="font-size:12px;color:var(--mute,#7c879b);margin:10px 0 0">Your location is only uploaded while sharing, visible to people with your link, and deleted after 7 days. <a href="/privacy" style="color:inherit;text-decoration:underline">Privacy</a></p>
+    <div class="sub" style="margin-top:12px">Do this <b>before</b> switching to airplane mode, while you still have internet.</div>
+  </div>
+
+  <div class="hide" id="live">
+    <div class="card">
+      <div style="display:flex;justify-content:space-between;align-items:center"><h1 id="title">Sharing</h1><span class="pill ok" id="gpsPill">GPS</span></div>
+      <div class="sub" id="who"></div>
+      <div class="link"><input id="url" readonly><button id="copy">Copy</button></div>
+      <button class="ghost" id="send">Send link…</button>
+    </div>
+    <div class="card">
+      <div class="row"><span>GPS</span><b id="fix">waiting for a fix…</b></div>
+      <div class="row"><span>Altitude</span><b id="alt">-</b></div>
+      <div class="row"><span>Speed</span><b id="spd">-</b></div>
+      <div class="row"><span>Points recorded</span><b id="rec">0</b></div>
+      <div class="row"><span>Uploaded</span><b id="up">0</b></div>
+      <div class="row"><span>Connection</span><b id="net">-</b></div>
+    </div>
+    <div class="card">
+      <b>Keep it tracking</b>
+      <ol>
+        <li>Keep this page open and the screen on (it asks the phone to stay awake). Plug in if you can.</li>
+        <li>Airplane mode is fine: GPS keeps working. A window seat gives the best fix.</li>
+        <li>Uploads resume by themselves on in-flight Wi-Fi or after landing.</li>
+      </ol>
+    </div>
+    <button class="big stop" id="stop">Stop sharing</button>
+  </div>
+</div>
+<script src="config.js"></script>
+<script>
+const API = (window.BR_CONFIG || {}).historyApi + '/share';
+const $ = id => document.getElementById(id);
+const load = (k, d) => { try { return JSON.parse(localStorage.getItem(k)) ?? d; } catch (e) { return d; } };
+const save = (k, v) => { try { localStorage.setItem(k, JSON.stringify(v)); } catch (e) {} };
+let S = load('ft-share', null);          // {id, key, callsign, name}
+let queue = load('ft-share-queue', []);  // points not yet uploaded
+let sent = load('ft-share-sent', 0), recorded = load('ft-share-rec', 0), watch = null, lock = null, lastFix = 0;
+const q = new URLSearchParams(location.search);
+$('cs').value = (q.get('flight') || (S && S.callsign) || '').toUpperCase().replace(/[^A-Z0-9]/g, '').slice(0, 8);
+$('nm').value = (S && S.name) || '';
+
+const viewUrl = () => `${location.origin}/live?s=${S.id}`;
+function showLive() {
+  $('setup').classList.add('hide'); $('live').classList.remove('hide');
+  $('title').textContent = S.callsign ? `Sharing ${S.callsign}` : 'Sharing my flight';
+  $('who').textContent = S.name ? `as ${S.name}` : '';
+  $('url').value = viewUrl();
+}
+async function start() {
+  if (!navigator.geolocation) { alert('This browser cannot read GPS.'); return; }
+  if (!S) {
+    $('start').textContent = 'Creating link…';
+    try {
+      const r = await fetch(API, {method: 'POST', headers: {'Content-Type': 'application/json'}, body: JSON.stringify({callsign: $('cs').value.trim(), name: $('nm').value.trim()})});
+      const j = await r.json();
+      if (!j.id) throw new Error(j.error || 'failed');
+      S = {id: j.id, key: j.key, callsign: $('cs').value.trim().toUpperCase(), name: $('nm').value.trim()};
+      save('ft-share', S); queue = []; sent = 0; recorded = 0; save('ft-share-queue', queue);
+    } catch (e) { $('start').textContent = 'Start sharing'; alert('Could not create the link (no internet?). Connect once, then try again.'); return; }
+  }
+  showLive(); track();
+}
+async function track() {
+  try { lock = await navigator.wakeLock?.request('screen'); } catch (e) {}
+  document.addEventListener('visibilitychange', async () => { if (!document.hidden && !lock) try { lock = await navigator.wakeLock?.request('screen'); } catch (e) {} });
+  watch = navigator.geolocation.watchPosition(pos => {
+    const c = pos.coords, ts = pos.timestamp / 1000;
+    if (ts - lastFix < 0.9) return;
+    lastFix = ts;
+    queue.push([+ts.toFixed(1), +c.latitude.toFixed(6), +c.longitude.toFixed(6), c.altitude != null ? Math.round(c.altitude) : null,
+      c.speed != null ? +c.speed.toFixed(1) : null, c.heading != null && !isNaN(c.heading) ? Math.round(c.heading) : null, Math.round(c.accuracy)]);
+    recorded++;
+    if (recorded % 5 === 0) { save('ft-share-queue', queue.slice(-20000)); save('ft-share-rec', recorded); }
+    $('fix').textContent = `±${Math.round(c.accuracy)} m`;
+    $('alt').textContent = c.altitude != null ? `${Math.round(c.altitude * 3.28084).toLocaleString('en-IN')} ft` : 'n/a';
+    $('spd').textContent = c.speed != null ? `${Math.round(c.speed * 1.94384)} kt · ${Math.round(c.speed * 3.6)} km/h` : 'n/a';
+    $('rec').textContent = recorded.toLocaleString('en-IN');
+    $('gpsPill').className = 'pill ' + (c.accuracy < 50 ? 'ok' : 'warn');
+  }, err => { $('fix').textContent = 'GPS error: ' + err.message; $('gpsPill').className = 'pill bad'; },
+  {enableHighAccuracy: true, maximumAge: 0, timeout: 60000});
+}
+let flushing = false;
+async function flush() {
+  $('net').innerHTML = navigator.onLine ? '<span class="ok">online</span>' : '<span class="warn">offline · saving on phone</span>';
+  if (!S || flushing || !queue.length || !navigator.onLine) return;
+  flushing = true;
+  try {
+    const batch = queue.slice(0, 300);
+    const r = await fetch(`${API}/${S.id}/points`, {method: 'POST', headers: {'Content-Type': 'application/json', 'X-Key': S.key}, body: JSON.stringify(batch)});
+    // 404 = share expired/purged: stop queueing; 400/413 = rejected as malformed: drop it (403/429/5xx: retry later)
+    if (r.status === 404) { queue = []; save('ft-share-queue', queue); }
+    else if (r.ok || r.status === 400 || r.status === 413) { queue.splice(0, batch.length); sent += batch.length; save('ft-share-queue', queue); save('ft-share-sent', sent); }
+  } catch (e) {}
+  $('up').textContent = `${sent.toLocaleString('en-IN')}${queue.length ? ` · ${queue.length.toLocaleString('en-IN')} waiting` : ''}`;
+  flushing = false;
+  if (queue.length && navigator.onLine) setTimeout(flush, 300);   // drain the backlog quickly after reconnecting
+}
+setInterval(flush, 5000);
+addEventListener('online', flush);
+$('start').onclick = start;
+$('copy').onclick = () => { $('url').select(); navigator.clipboard?.writeText($('url').value); $('copy').textContent = 'Copied'; setTimeout(() => $('copy').textContent = 'Copy', 1500); };
+$('send').onclick = () => navigator.share ? navigator.share({title: 'Track my flight live', text: `Follow my flight${S.callsign ? ' ' + S.callsign : ''} live:`, url: viewUrl()}).catch(() => {}) : $('copy').click();
+$('stop').onclick = async () => {
+  if (!confirm('Stop sharing? Viewers keep the path recorded so far.')) return;
+  if (watch != null) navigator.geolocation.clearWatch(watch);
+  try { lock && lock.release(); } catch (e) {}
+  await flush();
+  try { await fetch(`${API}/${S.id}/meta`, {method: 'POST', headers: {'Content-Type': 'application/json', 'X-Key': S.key}, body: JSON.stringify({ended: true})}); } catch (e) {}
+  if (!queue.length) { localStorage.removeItem('ft-share'); localStorage.removeItem('ft-share-queue'); localStorage.removeItem('ft-share-sent'); localStorage.removeItem('ft-share-rec'); }
+  location.href = `/live?s=${S.id}`;
+};
+if (S) { showLive(); track(); flush(); }   // resume after a reload (works offline too)
+</script>
+</body>
+</html>

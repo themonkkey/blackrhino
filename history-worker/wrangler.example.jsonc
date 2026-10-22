@@ -1,0 +1,14 @@
+// Copy to wrangler.jsonc and fill in. Secrets (never in this file):
+//   npx wrangler secret put RUN_KEY      -> manual /run trigger
+//   npx wrangler secret put INGEST_KEY   -> OpenSky relay pushes (relay/opensky_relay.py)
+{
+  "name": "flight-history",
+  "main": "index.js",
+  "compatibility_date": "2025-09-01",
+  "triggers": {"crons": ["*/10 * * * *"]},
+  "d1_databases": [{"binding": "DB", "database_name": "flight-history", "database_id": "<from: npx wrangler d1 create flight-history>"}],
+  "vars": {
+    "FEED_URL": "https://<your-app>.vercel.app/api/flights?rec=1",
+    "ALLOWED_ORIGINS": "https://<your-app>.vercel.app"
+  }
+}

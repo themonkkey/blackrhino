@@ -1,0 +1,31 @@
+<!doctype html>
+<html lang="en"><head><meta charset="utf-8"><meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Privacy · blackrhino</title><meta name="description" content="How BlackRhino handles data: no accounts, no cookies, shared GPS deleted after 7 days."><meta name="theme-color" content="#030405">
+<link rel="icon" type="image/svg+xml" href="icons/mark.svg"><link rel="canonical" href="https://blackrhino.in/privacy">
+<link rel="preconnect" href="https://fonts.googleapis.com"><link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Montserrat+Alternates:wght@400;500&family=Montserrat:wght@400;500;600&family=JetBrains+Mono:wght@400&display=swap">
+<link rel="stylesheet" href="legal.css"></head><body>
+<header><div class="wrap"><a class="wm" href="/"><svg viewBox="0 0 64 64"><path d="M5 31C5 23 11 18 20 18L32 18C35 18 37.5 18.8 39.5 20.5L40 15.8C40.3 14 42.6 13.8 43 15.6L43.6 21.6C46.5 23.5 48.5 26.5 50 29.5L51.3 26.4L53.2 31C55.5 27.5 58.2 22.5 61.5 19C61 25.5 59.5 31.5 57.5 35.5C59.2 37.5 59.7 40.5 58.8 43.2C56.3 45.7 51.2 45.8 47.6 44.2L44.6 45.4L44 54L37.4 54L37 48L21 48L20.5 54L13.8 54L13.2 46.2C8 43.8 5 38.2 5 31Z"/></svg>blackrhino<span class="dot"></span></a>
+<nav><a href="/map">Radar</a><a href="/privacy">Privacy</a><a href="/terms">Terms</a><a href="/credits">Credits</a></nav></div></header>
+<main class="wrap"><div class="lbl">Legal</div><h1>privacy</h1><div class="upd">Last updated 12 October 2026</div>
+<div class="box"><strong>Short version.</strong> No accounts, no cookies, no ads, no analytics, no tracking pixels. We never sell or share data. The only personal data we store is the GPS track you choose to share with <a href="/share">Share my flight</a>, and it deletes itself after 7 days.</div>
+<h2>what we collect</h2>
+<table><tr><th>Data</th><th>When</th><th>Where it lives</th><th>How long</th></tr>
+<tr><td>Nothing (browsing)</td><td>Using the radar, 3D or boards</td><td>Not stored by us</td><td>n/a</td></tr>
+<tr><td>Preferences, bookmarks, recent flights, cached route lookups</td><td>As you use the app</td><td>Only in your browser (localStorage)</td><td>Until you clear site data</td></tr>
+<tr><td>Shared GPS track: position, altitude, speed, heading, accuracy, time, and the flight number you type</td><td>Only after you start Share my flight and allow location</td><td>Our database on Cloudflare</td><td><strong>Deleted automatically after 7 days</strong></td></tr>
+<tr><td>IP address</td><td>When you create a share (abuse limit: 6 per hour)</td><td>Our database on Cloudflare</td><td>Deleted within the hour</td></tr>
+<tr><td>Standard request logs (IP, browser, page)</td><td>Every request</td><td>Our hosts, Vercel and Cloudflare, for delivery and security</td><td>Per their policies (hours to days)</td></tr></table>
+<h2>share my flight</h2>
+<p>Sharing is off until you start it and your browser asks for location permission. Your phone keeps the points on the device while offline and uploads them when it reconnects. Anyone with your share link can see the track, rounded to about 10 metres. Stop sharing at any time from the share page; everything is deleted 7 days after the share was created. To delete it sooner, email <a href="mailto:{{CONTACT_EMAIL}}">{{CONTACT_EMAIL}}</a> with the share link.</p>
+<p>"I'm on this flight" on the radar uses your location only inside your browser and never sends it to us.</p>
+<h2>aircraft data</h2>
+<p>Aircraft positions come from public ADS-B radio broadcasts collected by community receiver networks (see <a href="/credits">Credits</a>). Registration and type come from public databases. Aircraft owners who want their aircraft hidden can email <a href="mailto:{{CONTACT_EMAIL}}">{{CONTACT_EMAIL}}</a> with the registration or hex code.</p>
+<h2>third parties your browser talks to</h2>
+<p>To draw the map and load the app, your browser fetches files directly from these services, which therefore see your IP address: OpenFreeMap (map tiles), Esri (satellite imagery in 3D), AWS open terrain tiles, EUMETSAT (clouds, via our server), adsbdb (route and airframe lookups, sends a flight number or aircraft code), Google Fonts, and the jsDelivr and cdnjs code libraries. We don't embed social widgets or ad networks.</p>
+<h2>your rights</h2>
+<p>Under India's Digital Personal Data Protection Act, 2023 you can ask what data we hold about you, ask us to correct or delete it, and withdraw consent (stop sharing). Email <a href="mailto:{{CONTACT_EMAIL}}">{{CONTACT_EMAIL}}</a>; we reply within 30 days. The service is not directed at children under 18; Share my flight should be started by an adult.</p>
+<h2>changes</h2><p>If this policy changes, the date above changes and material changes are noted on this page.</p>
+</main>
+<footer><div class="wrap"><span>© 2026 BlackRhino · blackrhino.in · free, non-commercial</span><span>Positions from community ADS-B. Not for navigation.</span></div></footer>
+</body></html>

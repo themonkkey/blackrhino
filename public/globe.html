@@ -1,0 +1,616 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+<meta name="theme-color" content="#0b0f17">
+<meta name="mobile-web-app-capable" content="yes">
+<meta name="apple-mobile-web-app-capable" content="yes">
+<meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
+<meta name="apple-mobile-web-app-title" content="BlackRhino">
+<link rel="manifest" href="manifest.webmanifest">
+<link rel="icon" type="image/png" href="icons/favicon-32.png">
+<link rel="apple-touch-icon" href="icons/apple-touch-icon.png">
+<title>BlackRhino · 3D</title>
+<script>window.__first = fetch('/api/flights').then(r => r.json()).catch(() => null);
+if ('serviceWorker' in navigator) navigator.serviceWorker.register('sw.js');</script>
+<link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/cesium@1.121.0/Build/Cesium/Widgets/widgets.css" integrity="sha256-cCxa3z0W7H8cA8xft+y4I69sWfoZJ4n7LIWax6EfSgw=" crossorigin="anonymous">
+<script src="https://cdn.jsdelivr.net/npm/cesium@1.121.0/Build/Cesium/Cesium.js" integrity="sha256-WN2SBzMkFgQiXE0Q0nahM625Nll22Fl7uPWd8UNSAMA=" crossorigin="anonymous"></script>
+<link rel="stylesheet" href="shared.css">
+<script src="config.js"></script>
+<script src="shared.js"></script>
+<script src="eta.js"></script>
+<script src="shared-extra.js"></script>
+<style>
+:root{--panel:rgba(14,19,30,.9);--line:#232c3d;--fg:#e6ebf5;--mute:#8592a8;--acc:#7cc8ff}
+*{box-sizing:border-box}html,body{margin:0;height:100%;background:#000;color:var(--fg);font:13px/1.4 ui-sans-serif,-apple-system,"Segoe UI",sans-serif;overflow:hidden}
+#cesium{position:absolute;inset:0}
+.cesium-viewer-bottom{display:none}
+.hud{position:absolute;z-index:10;background:var(--panel);border:1px solid var(--line);border-radius:10px;backdrop-filter:blur(6px)}
+#top{top:12px;left:12px;padding:10px 12px;display:flex;gap:14px;align-items:center;flex-wrap:wrap;max-width:calc(100% - 24px)}
+#top h1{font-size:14px;margin:0}
+.dot{width:8px;height:8px;border-radius:50%;background:#3ddc84;display:inline-block;margin-right:6px;box-shadow:0 0 8px #3ddc84;animation:p 1.6s infinite}
+@keyframes p{50%{opacity:.35}}
+.stat{color:var(--mute)}.stat b{color:var(--fg);font-variant-numeric:tabular-nums}
+input[type=text]{background:#151c2a;border:1px solid var(--line);color:var(--fg);border-radius:6px;padding:5px 8px;width:150px}
+a{color:var(--acc);text-decoration:none}
+#info{right:12px;top:12px;width:310px;padding:14px;display:none}
+#info h2{margin:0 0 2px;font-size:20px;color:var(--acc)}
+#info .sub{color:var(--mute);margin-bottom:10px}
+#info table{width:100%;border-collapse:collapse}#info td{padding:3px 0;border-bottom:1px solid var(--line)}#info td:last-child{text-align:right;font-variant-numeric:tabular-nums}
+#close{position:absolute;right:10px;top:8px;cursor:pointer;color:var(--mute);font-size:18px}
+.btns{display:flex;gap:6px;margin-top:10px;flex-wrap:wrap}
+button{background:#1b2436;border:1px solid var(--line);color:var(--fg);border-radius:6px;padding:6px 10px;cursor:pointer;font:inherit}
+button.on{background:var(--acc);color:#111;border-color:var(--acc)}
+#ctrl{left:12px;bottom:12px;padding:10px 12px;width:240px}
+#ctrl .bar{height:8px;border-radius:4px;background:linear-gradient(90deg,#5f6d79,#2f8de4,#4aa8f0,#7cc8ff,#c4e7ff,#ffffff)}
+#ctrl .lab{display:flex;justify-content:space-between;color:var(--mute);font-size:11px;margin:3px 0 8px}
+#ctrl label{display:block;color:var(--mute);margin-top:4px}
+#ctrl input[type=range]{width:100%}
+#src{right:12px;bottom:12px;padding:6px 10px;color:var(--mute);font-size:11px;max-width:300px}
+@media(max-width:700px){#info,#apt{max-height:38vh!important}}
+body.tracking #ctrl{display:none}
+body.tracking #src{display:none}
+#fhud{display:none;left:50%;transform:translateX(-50%);bottom:calc(14px + env(safe-area-inset-bottom));width:min(720px,calc(100% - 24px));
+  padding:12px 16px;background:rgba(8,12,22,.55);backdrop-filter:blur(14px) saturate(140%);-webkit-backdrop-filter:blur(14px) saturate(140%);
+  border:1px solid rgba(255,255,255,.12);border-radius:16px;box-shadow:0 10px 40px rgba(0,0,0,.35)}
+body.tracking.has-flight #fhud{display:block}
+#fhud.estimated{border-color:rgba(234,179,8,.6)}
+#fhud.estimated #hSt{background:rgba(234,179,8,.25);color:#fde68a}
+body.tracking #info{display:none!important}
+body.tracking.show-info #info{display:block!important}
+body.tracking #watchBar{bottom:auto!important;top:70px}
+body.tracking.has-flight #watchBar{display:none}
+.fh-top{display:flex;align-items:center;gap:10px;flex-wrap:wrap}
+.fh-top b{font-size:20px;letter-spacing:.5px;color:var(--acc)}
+#hSt{font-weight:600;font-size:12px;padding:2px 8px;border-radius:999px;background:rgba(255,255,255,.1)}
+.fh-cams{margin-left:auto;display:flex;gap:4px}
+.fh-cams button{padding:4px 9px;font-size:12px;background:rgba(255,255,255,.08);border-color:rgba(255,255,255,.12)}
+.fh-cams button.on{background:var(--acc);color:#111;border-color:var(--acc)}
+.fh-route{display:flex;align-items:center;gap:10px;margin:10px 0 8px}
+.fh-route b{font-size:15px;min-width:34px;text-align:center}
+.fh-bar{flex:1;height:4px;border-radius:2px;background:rgba(255,255,255,.15);position:relative}
+.fh-bar i{position:absolute;inset:0 auto 0 0;border-radius:2px;background:linear-gradient(90deg,#7cc8ff,#c4e7ff)}
+.fh-bar em{position:absolute;top:50%;transform:translate(-50%,-55%) rotate(0deg);font-style:normal;font-size:16px;color:#fff;text-shadow:0 0 6px rgba(0,0,0,.6)}
+.fh-grid{display:grid;grid-template-columns:repeat(5,1fr);gap:6px}
+.fh-grid div{display:flex;flex-direction:column}
+.fh-grid small{font-size:10px;letter-spacing:1px;color:var(--mute)}
+.fh-grid b{font-size:24px;font-weight:600;font-variant-numeric:tabular-nums;line-height:1.15}
+.fh-grid span{font-size:11px;color:var(--mute)}
+@media(max-width:700px){.fh-grid{grid-template-columns:repeat(3,1fr)}.fh-grid b{font-size:19px}.fh-cams{margin-left:0;width:100%}.fh-cams button{flex:1}}
+body.tracking #bCtrl{display:inline-block}
+body.tracking.show-ctrl #ctrl{display:block}   /* globe centres the plane: keep it above the sheet */
+</style>
+<link rel="preconnect" href="https://fonts.googleapis.com"><link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Montserrat+Alternates:wght@400;500;600&family=Montserrat:wght@400;500;600;700&family=JetBrains+Mono:wght@400;500&display=swap">
+<link rel="stylesheet" href="premium.css">
+<link rel="stylesheet" href="blackrhino.css">
+</head>
+<body>
+<div id="cesium"></div>
+<div id="top" class="hud">
+  <h1 onclick="location.href='/'" title="blackrhino.in"><span class="logo"><svg viewBox="0 0 64 64"><path d="M5 31C5 23 11 18 20 18L32 18C35 18 37.5 18.8 39.5 20.5L40 15.8C40.3 14 42.6 13.8 43 15.6L43.6 21.6C46.5 23.5 48.5 26.5 50 29.5L51.3 26.4L53.2 31C55.5 27.5 58.2 22.5 61.5 19C61 25.5 59.5 31.5 57.5 35.5C59.2 37.5 59.7 40.5 58.8 43.2C56.3 45.7 51.2 45.8 47.6 44.2L44.6 45.4L44 54L37.4 54L37 48L21 48L20.5 54L13.8 54L13.2 46.2C8 43.8 5 38.2 5 31Z"/></svg></span>blackrhino<span class="br-dot"></span><small>3D · live</small></h1>
+  <span class="stat"><span class="dot"></span>Aircraft <b id="nAll">0</b></span>
+  <span class="stat">Updated <b id="age">-</b></span>
+  <input type="text" id="q" placeholder="Flight, reg, airport…" autocomplete="off">
+  <button id="bCtrl" class="mob">⚙</button>
+  <a href="/map">2D map →</a>
+</div>
+<div id="info" class="hud"><span id="close">×</span>
+  <div class="btns" style="margin:0 0 8px"><button id="bChase">Chase cam</button><button id="bCockpit">Cockpit</button><button id="bOrbit">Orbit</button><button id="bFree">Free</button></div>
+  <div id="infoBody"></div>
+</div>
+<div id="fhud" class="hud">
+  <div class="fh-top"><span class="dot"></span><b id="hCs">-</b><span id="hAl" class="stat"></span><span id="hSt"></span>
+    <span class="fh-cams"><button data-cam="chase">Chase</button><button data-cam="cockpit">Cockpit</button><button data-cam="orbit">Orbit</button><button data-cam="free">Free</button><button id="hDet">Details</button></span></div>
+  <div class="fh-route"><b id="hO">-</b><div class="fh-bar"><i id="hBar"></i><em id="hPlane">✈</em></div><b id="hD">-</b></div>
+  <div class="fh-grid">
+    <div><small>ALTITUDE</small><b id="hAlt">-</b><span>ft</span></div>
+    <div><small>GROUND SPEED</small><b id="hGs">-</b><span>kt</span></div>
+    <div><small>HEADING</small><b id="hHdg">-</b><span>°</span></div>
+    <div><small>VERTICAL</small><b id="hVs">-</b><span>ft/min</span></div>
+    <div><small>ETA</small><b id="hEta">-</b><span id="hEtaS">IST</span></div>
+  </div>
+</div>
+<div id="ctrl" class="hud">
+  <div class="stat" style="margin-bottom:4px">Altitude (ft)</div><div class="bar"></div>
+  <div class="lab"><span>gnd</span><span>10k</span><span>20k</span><span>30k</span><span>40k+</span></div>
+  <label>Altitude exaggeration <b id="exV">3×</b><input type="range" id="ex" min="1" max="10" step="1" value="3"></label>
+  <label>Plane size <b id="szV">36px</b><input type="range" id="sz" min="16" max="72" step="4" value="36"></label>
+  <label><input type="checkbox" id="trails" checked> 3D trails</label>
+  <label><input type="checkbox" id="labels" checked> callsign labels</label>
+  <label><input type="checkbox" id="sun" checked> real-time day / night</label>
+  <label><input type="checkbox" id="terrain"> 3D terrain (mountains; heavier)</label>
+</div>
+<div id="src" class="hud">connecting…</div>
+
+<script>
+const C = Cesium;
+const viewer = new C.Viewer('cesium', {
+  baseLayer: new C.ImageryLayer(new C.UrlTemplateImageryProvider({
+    url: 'https://server.arcgisonline.com/ArcGIS/rest/services/World_Imagery/MapServer/tile/{z}/{y}/{x}',
+    maximumLevel: 19, credit: 'Esri World Imagery'})),
+  baseLayerPicker: false, geocoder: false, timeline: false, animation: false, homeButton: false,
+  sceneModePicker: false, navigationHelpButton: false, fullscreenButton: false, infoBox: false,
+  selectionIndicator: false, requestRenderMode: false, msaaSamples: 4
+});
+// real terrain (Esri World Elevation 3D, free, no key): off by default. It costs ~200 ms/frame while
+// following a fast aircraft (constant tile streaming) and the Indian plains are flat anyway.
+let terrainTP = null;
+function setTerrain(on) {
+  if (!on) { viewer.scene.terrainProvider = new C.EllipsoidTerrainProvider(); return; }
+  (terrainTP ? Promise.resolve(terrainTP) : C.ArcGISTiledElevationTerrainProvider.fromUrl(
+    'https://elevation3d.arcgis.com/arcgis/rest/services/WorldElevation3D/Terrain3D/ImageServer').then(tp => terrainTP = tp))
+    .then(tp => { viewer.scene.terrainProvider = tp; }).catch(() => {});
+}
+viewer.resolutionScale = Math.min(1, 1.5 / (devicePixelRatio || 1));   // cap retina cost
+viewer.scene.globe.tileCacheSize = 400;
+// no boundaries/places overlay: Indian law requires official boundaries, and a flight view doesn't need them
+const scene = viewer.scene;
+{ const base = viewer.imageryLayers.get(0);   // Esri imagery is a little flat: lift contrast + colour
+  base.contrast = 1.12; base.saturation = 1.22; base.brightness = 1.04; base.gamma = 0.97;
+}
+const TRACKING = new URLSearchParams(location.search).has('flight');   // ?flight=... : close-up, true-scale tracking view
+const DD = TRACKING ? 0.12 : 1;   // tracking view: show far fewer distant labels/dots
+if (TRACKING) scene.globe.maximumScreenSpaceError = 1.5;   // sharper ground near the aircraft
+scene.globe.baseColor = C.Color.fromCssColorString('#4b5a3a');
+   // earth tone while imagery streams in (not black)
+scene.globe.enableLighting = true;
+scene.globe.dynamicAtmosphereLighting = true;
+scene.globe.depthTestAgainstTerrain = false;
+scene.fog.enabled = true;
+scene.fog.density = 1.6e-4;
+scene.highDynamicRange = true;                 // filmic tone mapping: sun glare, softer sky
+scene.postProcessStages.fxaa.enabled = true;
+scene.globe.showGroundAtmosphere = true;
+if (C.DynamicAtmosphereLightingType) scene.atmosphere.dynamicLighting = C.DynamicAtmosphereLightingType.SUNLIGHT;
+scene.skyAtmosphere.hueShift = 0; scene.skyAtmosphere.saturationShift = 0.05;
+viewer.camera.frustum.fov = C.Math.toRadians(60);
+viewer.clock.shouldAnimate = true;          // clock = real time, drives the sun
+viewer.camera.setView(TRACKING
+  ? {destination: C.Cartesian3.fromDegrees(88.44, 22.56, 2500), orientation: {heading: 0, pitch: C.Math.toRadians(-12), roll: 0}}   // start low over Kolkata, not from orbit
+  : {destination: C.Cartesian3.fromDegrees(79, 2, 2600000), orientation: {heading: 0, pitch: C.Math.toRadians(-55), roll: 0}});
+
+const POLL = 15000, FT2M = 0.3048;   // = CDN cache age of /api/flights
+let EX = TRACKING ? 1 : 3, selected = null, lastFetch = 0, serverOffset = 0, camMode = 'free';
+const planes = new Map();
+const trailCol = scene.primitives.add(new C.PolylineCollection());
+
+const STOPS = [[0,'#2f8de4'],[10000,'#4aa8f0'],[20000,'#7cc8ff'],[30000,'#c4e7ff'],[40000,'#ffffff']];
+function altHex(alt, ground) {
+  if (ground || alt == null) return '#9ca3af';
+  for (let i = STOPS.length - 1; i >= 0; i--) if (alt >= STOPS[i][0]) return STOPS[i][1];
+  return '#2f8de4';
+}
+const colorCache = {};
+const altColor = (a, g) => colorCache[altHex(a, g)] ||= C.Color.fromCssColorString(altHex(a, g));
+
+// Dead reckoning (great-circle), same as 2D view.
+const R = 6371000;
+function project(lat, lon, trk, gsKt, dt) {
+  const d = gsKt * 0.514444 * dt / R, b = trk * Math.PI / 180, p1 = lat * Math.PI / 180, l1 = lon * Math.PI / 180;
+  const p2 = Math.asin(Math.sin(p1) * Math.cos(d) + Math.cos(p1) * Math.sin(d) * Math.cos(b));
+  const l2 = l1 + Math.atan2(Math.sin(b) * Math.sin(d) * Math.cos(p1), Math.cos(d) - Math.sin(p1) * Math.sin(p2));
+  return [p2 * 180 / Math.PI, ((l2 * 180 / Math.PI) + 540) % 360 - 180];
+}
+const nowS = () => Date.now() / 1000 + serverOffset;
+const altM = d => d.ground || d.alt == null ? 15 : Math.max(d.alt * FT2M * EX, 15);
+
+function makePlane(d) {
+  const p = {d, pos: new C.Cartesian3(), quat: new C.Quaternion(), err: null, pts: []};
+  const s = document.getElementById('sz').value | 0;
+  p.ent = viewer.entities.add({
+    id: d.hex,
+    position: new C.CallbackProperty(t => { ensure(p, t); return p.pos; }, false),
+    orientation: new C.CallbackProperty(t => { ensure(p, t); return p.quat; }, false),
+    model: {uri: 'models/airliner_hq.glb', minimumPixelSize: s, maximumScale: 4000,
+      heightReference: d.ground ? C.HeightReference.CLAMP_TO_GROUND : C.HeightReference.NONE,
+      color: altColor(d.alt, d.ground), colorBlendMode: C.ColorBlendMode.MIX, colorBlendAmount: 0.55,
+      silhouetteColor: C.Color.WHITE, silhouetteSize: 0},
+    label: {text: d.flight || d.hex.toUpperCase(), font: '600 12px sans-serif', fillColor: C.Color.WHITE,
+      outlineColor: C.Color.BLACK, outlineWidth: 3, style: C.LabelStyle.FILL_AND_OUTLINE,
+      pixelOffset: new C.Cartesian2(0, -22), distanceDisplayCondition: new C.DistanceDisplayCondition(0, TRACKING ? 60000 : 300000),
+      show: document.getElementById('labels').checked, disableDepthTestDistance: 0}
+  });
+  p.trail = trailCol.add({positions: [], width: 2, material: C.Material.fromType('Color', {color: altColor(d.alt, d.ground).withAlpha(.6)})});
+  return p;
+}
+
+const HPR = new C.HeadingPitchRoll();
+// Place each plane once per frame, lazily, from whoever asks first (entity visualizer or camera),
+// so the drawn model and the chase camera always agree on the same frame.
+function ensure(p, t) {
+  t = t || viewer.clock.currentTime;
+  const k = t.dayNumber * 86400 + t.secondsOfDay;
+  if (p.k !== k) { p.k = k; place(p); }
+}
+const clamp = (v, a, b) => Math.max(a, Math.min(b, v));
+const ease = (rate, fdt) => 1 - Math.exp(-rate * fdt);         // frame-rate independent smoothing
+function place(p) {   // compute current (extrapolated) position + smoothed attitude
+  p.dv = p.est ? FT.virtual(p.d, nowS()) : null;   // silent near destination: modelled approach
+  const d = p.dv || p.d, dt = clamp(nowS() - d.ts, 0, 180);
+  const now = performance.now(), fdt = p.lastF ? Math.min((now - p.lastF) / 1000, 0.5) : 0;
+  p.lastF = now;
+  // follow the turn the aircraft is in (track_rate), not a straight line
+  const tr = d.x && typeof d.x.track_rate === 'number' && Math.abs(d.x.track_rate) < 5 ? d.x.track_rate : 0;
+  const trackNow = d.track + tr * Math.min(dt, 25);
+  let [lat, lon] = d.ground || d.gs < 30 ? [d.lat, d.lon] : project(d.lat, d.lon, d.track + (trackNow - d.track) / 2, d.gs, dt);
+  let h = altM(d) + (d.ground ? 0 : (d.vr || 0) * FT2M / 60 * Math.min(dt, 40) * EX);
+  if (p.err) {   // glide onto the new fix (exponential, ~3 s) instead of jumping
+    const k = Math.exp(-(now - p.err.t) / 3000);
+    lat += p.err.lat * k; lon += p.err.lon * k; h += p.err.h * k;
+    if (k < 1e-4) p.err = null;
+  }
+  p.lat = lat; p.lon = lon; p.h = Math.max(h, 15);
+  C.Cartesian3.fromDegrees(lon, lat, p.h, undefined, p.pos);
+  // attitude: heading, pitch and bank all eased, bank from real roll or a coordinated turn
+  if (p.hdg == null) { p.hdg = trackNow; p.pit = 0; p.bank = 0; p.turn = 0; }
+  const dh = ((trackNow - p.hdg + 540) % 360) - 180;
+  p.hdg = (p.hdg + dh * ease(1.5, fdt) + 360) % 360;
+  p.turn += ((tr || clamp(dh * 0.5, -3, 3)) - p.turn) * ease(1, fdt);
+  const bankT = d.ground ? 0 : (d.x && typeof d.x.roll === 'number' ? d.x.roll
+    : clamp(Math.atan(d.gs * 0.514444 * C.Math.toRadians(p.turn) / 9.81) * 180 / Math.PI, -28, 28));
+  p.bank += (bankT - p.bank) * ease(1.2, fdt);
+  const pitT = d.gs > 30 ? Math.atan2((d.vr || 0) * FT2M / 60, d.gs * 0.514444) : 0;
+  p.pit += (pitT - p.pit) * ease(1, fdt);
+  HPR.heading = C.Math.toRadians(p.hdg - 90); HPR.pitch = p.pit; HPR.roll = C.Math.toRadians(p.bank);
+  C.Transforms.headingPitchRollQuaternion(p.pos, HPR, undefined, undefined, p.quat);
+}
+
+function trailPositions(p) {
+  return [...p.pts.map(q => C.Cartesian3.fromDegrees(q[1], q[0], q[2])), p.pos];
+}
+
+let inflight = false;
+async function poll(first) {
+  if ((document.hidden && !first) || inflight) return;   // no work while tab is hidden
+  inflight = true;
+  const c = C.Cartographic.fromCartesian(viewer.camera.positionWC);
+  try {
+    const j = first || await fetch('/api/flights', {headers: {'X-Center': `${C.Math.toDegrees(c.latitude).toFixed(3)},${C.Math.toDegrees(c.longitude).toFixed(3)}`}}).then(r => r.json());
+    if (!j) throw 0;
+    serverOffset = j.now - Date.now() / 1000; lastFetch = Date.now();
+    FT.ingest(j);
+    ingest(j.ac);
+    markAirportPlanes();
+    const m = j.meta;
+    document.getElementById('src').innerHTML =
+      `${m.adsbfi ? `adsb.fi: ${m.adsbfi}${m.opensky ? `<br>OpenSky: ${m.opensky}` : ''}` : `OpenSky: ${m.opensky}${m.opensky_age != null ? ` (${m.opensky_age}s ago)` : ''}${m.quota ? ` · quota ${m.quota}` : ''}`}<br>adsb.lol: ${m.adsblol}<br>routes: ${m.routes || '-'} · ${FT.lookupStatus()}<br>motion between fixes is dead-reckoned · altitude ×${EX}`;
+  } catch (e) { document.getElementById('src').textContent = 'server unreachable, retrying…'; }
+  inflight = false;
+}
+
+function ingest(list, partial) {
+  const seen = new Set();
+  for (const d of list) {
+    FT.attach(d);
+    seen.add(d.hex);
+    let p = planes.get(d.hex);
+    if (!p) { p = makePlane(d); planes.set(d.hex, p); }
+    else if (d.ts > p.d.ts) {
+      if (p.est) { p.est = false; p.dv = null; }   // real signal is back
+      const oLat = p.lat, oLon = p.lon, oH = p.h;
+      const was = p.d; p.d = d; p.err = null; place(p); p.d = was; p.k = null;
+      p.err = {lat: oLat - p.lat, lon: oLon - p.lon, h: oH - p.h, t: performance.now()};
+      // a big miss (stale fix, source switch) glides badly: cut to the true position instead
+      const miss = Math.hypot(p.err.lat * 111e3, p.err.lon * 111e3 * Math.cos(p.lat * Math.PI / 180), p.err.h / EX);
+      if (!(miss < 3000)) p.err = null;
+    } else continue;
+    const recolor = p.d.hex === d.hex && altHex(p.d.alt, p.d.ground) !== altHex(d.alt, d.ground);
+    if (!!p.d.ground !== !!d.ground) p.ent.model.heightReference = d.ground ? C.HeightReference.CLAMP_TO_GROUND : C.HeightReference.NONE;
+    p.d = d;
+    p.pts.push([d.lat, d.lon, altM(d)]); if (p.pts.length > 150) p.pts.shift();
+    if (recolor || !p.colored) {
+      p.ent.model.color = altColor(d.alt, d.ground); p.colored = true;
+      p.trail.material.uniforms.color = altColor(d.alt, d.ground).withAlpha(.6);
+    }
+    if (d.flight) p.ent.label.text = d.flight;
+  }
+  if (!partial) for (const [hex, p] of planes) if (!seen.has(hex) && nowS() - p.d.ts > (p.est ? 2400 : 90)) {
+    viewer.entities.remove(p.ent); trailCol.remove(p.trail); planes.delete(hex);
+    if (selected === hex) select(null);
+  }
+  document.getElementById('nAll').textContent = planes.size;
+}
+
+let frameN = 0;
+scene.preUpdate.addEventListener(() => {
+  const showTrails = document.getElementById('trails').checked;
+  const camH = viewer.camera.positionCartographic.height;
+  frameN++;
+  for (const p of planes.values()) {
+    ensure(p);
+    const show = FT.onMap(p.d) || selected === p.d.hex;
+    if (p.ent.show !== show) p.ent.show = show;
+    // trails: always for the selected one, for all when camera is below ~1500 km; refresh every 10 frames
+    const want = showTrails && show && (selected === p.d.hex || camH < 1.5e6);
+    p.trail.show = want;
+    if (want && (frameN % 10 === 0 || selected === p.d.hex)) p.trail.positions = trailPositions(p);
+  }
+  if (selected && planes.has(selected)) updateCamera(planes.get(selected));
+  // Adaptive frame rate: from orbit a plane moves < 1 px/s, so render far less often.
+  viewer.targetFrameRate = camMode !== 'free' || camH < 3e5 ? 60 : camH < 2e6 ? 30 : 12;
+});
+
+// ---- camera modes ----
+const IDENT = C.Matrix4.IDENTITY;
+let orbitHeading = 0;
+let camHdg = null;
+function updateCamera(p) {
+  const trk = C.Math.toRadians(p.hdg ?? p.d.track);
+  // ease the camera heading toward the track so turns feel like a real chase plane
+  if (camHdg == null) camHdg = trk;
+  camHdg += (((trk - camHdg + 3 * Math.PI) % (2 * Math.PI)) - Math.PI) * 0.03;
+  if (camMode === 'chase') {
+    viewer.camera.lookAt(p.pos, new C.HeadingPitchRange(camHdg, C.Math.toRadians(p.d.ground ? -6 : -9), p.d.ground ? 90 : 125));
+  } else if (camMode === 'orbit') {
+    orbitHeading += 0.003;
+    viewer.camera.lookAt(p.pos, new C.HeadingPitchRange(orbitHeading, C.Math.toRadians(-25), 900));
+  } else if (camMode === 'cockpit') {
+    const nose = project(p.lat, p.lon, p.d.track, 600, 0.06);  // ~18.5 m ahead: the flight deck
+    viewer.camera.setView({destination: C.Cartesian3.fromDegrees(nose[1], nose[0], p.h + 1.2),
+      orientation: {heading: camHdg, pitch: (p.pit || 0) - C.Math.toRadians(3), roll: C.Math.toRadians(p.bank || 0)}});
+  }
+}
+function setCam(mode) {
+  camMode = mode;
+  viewer.camera.lookAtTransform(IDENT);
+  for (const [id, m] of [['bChase','chase'],['bCockpit','cockpit'],['bOrbit','orbit'],['bFree','free']])
+    document.getElementById(id).classList.toggle('on', m === mode);
+  if (mode === 'free' && selected) {
+    const p = planes.get(selected);
+    viewer.camera.flyTo({destination: C.Cartesian3.fromDegrees(p.lon, p.lat - 0.35, p.h + 25000),
+      orientation: {heading: 0, pitch: C.Math.toRadians(-45), roll: 0}, duration: 1.2});
+  }
+}
+document.getElementById('bChase').onclick = () => setCam('chase');
+document.getElementById('bCockpit').onclick = () => setCam('cockpit');
+document.getElementById('bOrbit').onclick = () => setCam('orbit');
+document.getElementById('bFree').onclick = () => setCam('free');
+
+// ---- selection + info ----
+function select(hex) {
+  contrail.length = 0; camHdg = null;
+  const prev = selected && planes.get(selected);
+  selected = hex;
+  if (prev) markPlane(prev);
+  FT.selectFlight(hex, hex && planes.get(hex));
+  const box = document.getElementById('info');
+  if (!hex) { box.style.display = 'none'; setCam('free'); camMode = 'free'; return; }
+  markPlane(planes.get(hex));
+  box.style.display = 'block';
+  renderInfo();
+  setCam('chase');
+}
+function renderInfo() {
+  const p = planes.get(selected); if (!p) return;
+  const box = document.getElementById('info'), sc = box.scrollTop;
+  document.getElementById('infoBody').innerHTML = FT.flightHTML(p, nowS());
+  box.scrollTop = sc;
+}
+
+// ---- airports, runways, selected route ----
+const aptEnts = new Map();
+function addAirports() {
+  for (const a of FT.airports) {
+    const big = a.type === 'large';
+    aptEnts.set(a.icao, viewer.entities.add({
+      id: 'apt:' + a.icao, position: C.Cartesian3.fromDegrees(a.lon, a.lat, 0),
+      point: {pixelSize: (big ? 8 : 5) * (TRACKING ? 0.6 : 1), color: C.Color.fromCssColorString(big ? '#e2e8f0' : '#94a3b8'),
+        outlineColor: C.Color.BLACK, outlineWidth: 1.5, disableDepthTestDistance: Number.POSITIVE_INFINITY,
+        distanceDisplayCondition: new C.DistanceDisplayCondition(0, (big ? 2.2e7 : a.type === 'medium' ? 2.5e6 : 9e5) * DD)},
+      label: {text: a.iata || a.icao, font: '700 12px sans-serif', fillColor: C.Color.fromCssColorString('#e2e8f0'),
+        outlineColor: C.Color.BLACK, outlineWidth: 3, style: C.LabelStyle.FILL_AND_OUTLINE, pixelOffset: new C.Cartesian2(10, -8),
+        horizontalOrigin: C.HorizontalOrigin.LEFT, disableDepthTestDistance: Number.POSITIVE_INFINITY,
+        distanceDisplayCondition: new C.DistanceDisplayCondition(0, (big ? 3.5e6 : 8e5) * DD)}
+    }));
+    for (const r of a.runways) viewer.entities.add({
+      polyline: {positions: C.Cartesian3.fromDegreesArray([r.pts[1], r.pts[0], r.pts[3], r.pts[2]]), width: 6, clampToGround: true,
+        material: C.Color.fromCssColorString('#cbd5e1').withAlpha(.85),
+        distanceDisplayCondition: new C.DistanceDisplayCondition(0, 2.5e5)}});
+  }
+}
+function styleAirports() {
+  for (const [icao, e] of aptEnts) {
+    const sel = FT.aptSel === icao;
+    e.point.color = C.Color.fromCssColorString(sel ? '#7cc8ff' : FT.byIcao[icao].type === 'large' ? '#e2e8f0' : '#94a3b8');
+    e.point.pixelSize = sel ? 13 : FT.byIcao[icao].type === 'large' ? 8 : 5;
+    e.label.fillColor = C.Color.fromCssColorString(sel ? '#7cc8ff' : '#e2e8f0');
+    e.label.distanceDisplayCondition = new C.DistanceDisplayCondition(0, sel ? 2e7 : (FT.byIcao[icao].type === 'large' ? 3.5e6 : 8e5) * DD);
+  }
+}
+// silhouette: white = selected flight, orange = to/from the selected airport
+function markPlane(p) {
+  const ap = FT.aptSel, rel = ap && (p.d.o === ap || p.d.d === ap) && p.d.rv !== false;
+  p.ent.model.silhouetteSize = selected === p.d.hex ? 0 : rel ? 1.5 : 0;
+  p.ent.model.colorBlendAmount = selected === p.d.hex ? 0 : 0.55;
+  p.ent.model.silhouetteColor = selected === p.d.hex ? C.Color.WHITE : C.Color.fromCssColorString('#7cc8ff');
+}
+function markAirportPlanes() { for (const p of planes.values()) markPlane(p); }
+
+const routeFlown = viewer.entities.add({polyline: {positions: new C.CallbackProperty(() => routePts(true), false), width: 3,
+  arcType: C.ArcType.GEODESIC, material: C.Color.fromCssColorString('#7cc8ff').withAlpha(.9)}});
+const routeLeft = viewer.entities.add({polyline: {positions: new C.CallbackProperty(() => routePts(false), false), width: 3,
+  arcType: C.ArcType.GEODESIC, material: new C.PolylineDashMaterialProperty({color: C.Color.WHITE.withAlpha(.85), dashLength: 24})}});
+// aircraft lighting on the selected plane: nav lights (red left, green right, white tail),
+// double-flash white wingtip strobes, red anti-collision beacon. Offsets are model metres (nose +X, left +Y, up +Z).
+const lights = scene.primitives.add(new C.PointPrimitiveCollection());
+const LIGHTS = [
+  {o: [-6.6, 17.45, 0.35], c: '#ff2a2a', s: 7, kind: 'nav'}, {o: [-6.6, -17.45, 0.35], c: '#22ff66', s: 7, kind: 'nav'},
+  {o: [-19.4, 0, 1.6], c: '#ffffff', s: 6, kind: 'nav'},
+  {o: [-7.0, 17.5, 0.35], c: '#ffffff', s: 14, kind: 'strobe'}, {o: [-7.0, -17.5, 0.35], c: '#ffffff', s: 14, kind: 'strobe'},
+  {o: [-1, 0, 2.15], c: '#ff3b30', s: 10, kind: 'beacon'}, {o: [1, 0, -2.15], c: '#ff3b30', s: 10, kind: 'beacon'}];
+for (const L of LIGHTS) L.pt = lights.add({pixelSize: L.s, color: C.Color.fromCssColorString(L.c), outlineColor: C.Color.fromCssColorString(L.c).withAlpha(0.3),
+  outlineWidth: 5, scaleByDistance: new C.NearFarScalar(80, 1.0, 20000, 0.25), show: false});
+const LM = new C.Matrix4(), LV = new C.Cartesian3(), LS = new C.Cartesian3(1, 1, 1);
+scene.preRender.addEventListener(() => {
+  const p = selected && planes.get(selected);
+  if (!p || camMode === 'cockpit') { for (const L of LIGHTS) L.pt.show = false; return; }
+  C.Matrix4.fromTranslationQuaternionRotationScale(p.pos, p.quat, LS, LM);
+  const t = performance.now() % 1200, strobe = t < 60 || (t > 150 && t < 210), beacon = (performance.now() % 1000) < 110;
+  for (const L of LIGHTS) {
+    L.pt.position = C.Matrix4.multiplyByPoint(LM, C.Cartesian3.fromArray(L.o, 0, LV), L.pt.position || new C.Cartesian3());
+    L.pt.show = L.kind === 'nav' || (L.kind === 'strobe' ? strobe : beacon);
+  }
+});
+
+// contrail behind the selected aircraft when it is high enough for one (~>26,000 ft)
+const contrail = [];
+let lastContrail = 0;
+viewer.entities.add({polyline: {positions: new C.CallbackProperty(() => {
+    const p = selected && planes.get(selected);
+    if (!p || p.d.ground || (p.d.alt || 0) < 26000) { contrail.length = 0; return []; }
+    const now = performance.now();
+    if (now - lastContrail > 250) { contrail.push(C.Cartesian3.clone(p.pos)); lastContrail = now; if (contrail.length > 240) contrail.shift(); }
+    return contrail.length > 1 ? contrail : [];
+  }, false), width: 9, material: new C.PolylineGlowMaterialProperty({glowPower: 0.3, taperPower: 0.6, color: C.Color.WHITE.withAlpha(0.6)})}});
+
+function routePts(flown) {
+  const p = selected && planes.get(selected);
+  if (!p || p.d.rv === false) return [];
+  const a = FT.apt(flown ? p.d.o : p.d.d);
+  if (!a || p.lat == null) return [];
+  return C.Cartesian3.fromDegreesArray(flown ? [a.lon, a.lat, p.lon, p.lat] : [p.lon, p.lat, a.lon, a.lat]);
+}
+
+document.getElementById('close').onclick = () => TRACKING ? document.body.classList.remove('show-info') : select(null);
+setInterval(() => {
+  if (selected) renderInfo();
+  document.getElementById('age').textContent = lastFetch ? Math.round((Date.now() - lastFetch) / 1000) + 's' : '-';
+}, 1000);
+
+new C.ScreenSpaceEventHandler(scene.canvas).setInputAction(e => {
+  const picked = scene.pick(e.position);
+  const id = picked && picked.id && picked.id.id;
+  if (id && planes.has(id)) select(id);
+  else if (id && id.startsWith('apt:')) FT.openAirport(id.slice(4));
+}, C.ScreenSpaceEventType.LEFT_CLICK);
+
+document.getElementById('q').addEventListener('keydown', e => {
+  if (e.key !== 'Enter') return;
+  const r = FT.search(e.target.value);
+  if (r && r.hex) return select(r.hex);
+  if (r && r.icao) return FT.openAirport(r.icao);
+  e.target.style.borderColor = '#ef4444'; setTimeout(() => e.target.style.borderColor = '', 800);
+});
+
+FT.init({
+  planes: () => planes,
+  selectFlight: hex => planes.has(hex) && select(hex),
+  focusAirport: a => {
+    if (!a) return;
+    if (selected) select(null);
+    viewer.camera.flyTo({destination: C.Cartesian3.fromDegrees(a.lon, a.lat - 0.45, 38000),
+      orientation: {heading: 0, pitch: C.Math.toRadians(-40), roll: 0}, duration: 1.6});
+  },
+  airportChanged: () => {
+    styleAirports(); markAirportPlanes();
+    document.getElementById('ctrl').style.display = document.getElementById('apt').style.display === 'block' ? 'none' : '';
+  },
+  refreshInfo: () => renderInfo(),
+  addFlights: list => ingest(list, true),
+  refilter: () => {},
+  layer: (name, on) => setLayer3d(name, on),
+  showTrack: pts => showTrack3d(pts),
+}).then(addAirports);
+
+// ---- map layers: satellite clouds (EUMETSAT WMS, cold cloud tops kept, warm ground keyed out), ATC boundaries
+const layers3d = {};
+function setLayer3d(name, on) {
+  if (layers3d[name]) {
+    if (name === 'clouds') viewer.imageryLayers.remove(layers3d.clouds); else viewer.dataSources.remove(layers3d[name]);
+    delete layers3d[name];
+  }
+  if (!on) return;
+  if (name === 'clouds') {
+    const l = viewer.imageryLayers.addImageryProvider(new C.WebMapServiceImageryProvider({url: FT.CLOUD_WMS.url, layers: FT.CLOUD_WMS.layers,
+      parameters: {transparent: true, format: 'image/png'}, credit: 'Clouds: EUMETSAT Meteosat'}));
+    l.alpha = 0.75; l.colorToAlpha = C.Color.BLACK; l.colorToAlphaThreshold = 0.42;   // keep only bright (cold) cloud tops
+    layers3d.clouds = l;
+  } else if (name === 'fir') {
+    FT.firData().then(fc => C.GeoJsonDataSource.load(fc, {stroke: C.Color.fromCssColorString('#7dd3fc'), fill: C.Color.TRANSPARENT, strokeWidth: 2, clampToGround: true}))
+      .then(ds => {
+        if (layers3d.fir) return;
+        for (const e of ds.entities.values) if (e.polygon) {
+          const pos = e.polygon.hierarchy.getValue().positions, c = C.BoundingSphere.fromPoints(pos).center;
+          e.polygon.outline = false;
+          e.polyline = {positions: [...pos, pos[0]], width: 2, clampToGround: true, material: new C.PolylineDashMaterialProperty({color: C.Color.fromCssColorString('#7dd3fc').withAlpha(.85)})};
+          e.position = C.Ellipsoid.WGS84.scaleToGeodeticSurface(c);
+          e.label = {text: e.properties.name.getValue(), font: '600 13px sans-serif', fillColor: C.Color.fromCssColorString('#7dd3fc'), outlineColor: C.Color.BLACK,
+            outlineWidth: 3, style: C.LabelStyle.FILL_AND_OUTLINE, distanceDisplayCondition: new C.DistanceDisplayCondition(4e5, 2e7)};
+        }
+        viewer.dataSources.add(ds); layers3d.fir = ds;
+      });
+  }
+}
+let track3d = null;
+function showTrack3d(pts) {
+  if (track3d) { viewer.entities.remove(track3d); track3d = null; }
+  if (!pts || pts.length < 2) return;
+  track3d = viewer.entities.add({polyline: {positions: pts.map(p => C.Cartesian3.fromDegrees(p[2], p[1], Math.max(p[3] * FT2M * EX, 30))), width: 3,
+    material: new C.PolylineGlowMaterialProperty({glowPower: .2, color: C.Color.fromCssColorString('#f472b6')})}});
+  if (selected) select(null);
+  viewer.flyTo(track3d, {duration: 1.5});
+}
+
+// ---- controls ----
+document.getElementById('ex').oninput = e => { EX = +e.target.value; document.getElementById('exV').textContent = EX + '×';
+  for (const p of planes.values()) p.pts.length = 0; };   // old trail heights are stale
+document.getElementById('sz').oninput = e => { const s = +e.target.value; document.getElementById('szV').textContent = s + 'px';
+  for (const p of planes.values()) p.ent.model.minimumPixelSize = s; };
+document.getElementById('labels').onchange = e => { for (const p of planes.values()) p.ent.label.show = e.target.checked; };
+document.getElementById('bCtrl').onclick = () => document.body.classList.toggle('show-ctrl');
+document.getElementById('terrain').onchange = e => setTerrain(e.target.checked);
+document.getElementById('sun').onchange = e => { scene.globe.enableLighting = e.target.checked; };
+
+if (TRACKING) {
+  document.getElementById('ex').value = 1; document.getElementById('exV').textContent = '1×';
+  document.body.classList.add('tracking');
+}
+setInterval(() => { const p = selected && planes.get(selected); if (p) FT.checkEstimate(p, nowS(), true); }, 3000);
+// the selected aircraft gets its own fresh position every 3 s (smooth tracking)
+let hexApi = true;
+setInterval(async () => {
+  if (!selected || document.hidden || !hexApi) return;
+  try {
+    const r = await fetch('/api/hex?hex=' + selected);
+    if (!r.ok) { hexApi = r.status !== 404; return; }
+    const j = await r.json();
+    if (j.ac && j.ac.length) {
+      const prev = planes.get(selected);
+      const d = j.ac[0];
+      if (prev && prev.d) { d.country = prev.d.country; for (const k of ['o', 'd', 'fi', 'al', 'rv', 'model', 'own']) if (prev.d[k] != null && d[k] == null) d[k] = prev.d[k]; }
+      ingest([d], true);
+    }
+  } catch (e) {}
+}, 3000);
+// flight HUD (tracking view)
+const IST2 = {timeZone: 'Asia/Kolkata', hour: '2-digit', minute: '2-digit', hour12: false};
+const $ = id => document.getElementById(id);
+setInterval(() => {
+  const p = selected && planes.get(selected);
+  if (!p || !TRACKING) return;
+  const d = p.dv || p.d, s = FT.status(p), o = FT.apt(d.o), t = FT.apt(d.d);
+  $('hCs').textContent = d.flight || d.hex.toUpperCase();
+  $('hAl').textContent = [d.al, d.reg, d.model || d.type].filter(Boolean).join(' · ');
+  $('hSt').textContent = s.label; $('hSt').className = s.cls;
+  $('hO').textContent = o ? (o.iata || o.icao) : '-'; $('hD').textContent = t ? (t.iata || t.icao) : '-';
+  const pct = s.progress != null ? s.progress * 100 : 0;
+  $('hBar').style.width = pct + '%'; $('hPlane').style.left = pct + '%';
+  $('hAlt').textContent = d.ground ? 'GND' : Math.round(altM(d) / EX / FT2M + (p.dv ? 0 : (d.vr || 0) / 60 * Math.min(nowS() - d.ts, 40))).toLocaleString('en-IN');
+  document.getElementById('fhud').classList.toggle('estimated', !!p.est);
+  $('hGs').textContent = Math.round(d.gs);
+  $('hHdg').textContent = String(Math.round(p.hdg ?? d.track) % 360).padStart(3, '0');
+  $('hVs').textContent = d.vr ? (d.vr > 0 ? '+' : '') + Math.round(d.vr / 50) * 50 : '0';
+  $('hEta').textContent = s.eta ? s.eta.toLocaleTimeString('en-IN', IST2) : '-';
+  $('hEtaS').textContent = s.etaMin ? `IST · ${Math.round(s.etaMin)} min` : 'IST';
+  for (const b of document.querySelectorAll('.fh-cams [data-cam]')) b.classList.toggle('on', b.dataset.cam === camMode);
+}, 250);
+for (const b of document.querySelectorAll('.fh-cams [data-cam]')) b.onclick = () => setCam(b.dataset.cam);
+$('hDet').onclick = () => document.body.classList.toggle('show-info');
+window.__first.then(j => poll(j));   // data was requested before Cesium even loaded
+setInterval(poll, POLL);
+document.addEventListener('visibilitychange', () => { if (!document.hidden) poll(); });
+</script>
+</body>
+</html>

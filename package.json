@@ -1,0 +1,12 @@
+{
+  "name": "blackrhino",
+  "private": true,
+  "type": "module",
+  "engines": {
+    "node": ">=20"
+  },
+  "license": "MIT",
+  "scripts": {
+    "check": "for f in api/*.js history-worker/index.js public/*.js; do node --check \"$f\" || exit 1; done"
+  }
+}
