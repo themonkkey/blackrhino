@@ -13,6 +13,17 @@ export const HEX_OK = /^~?[0-9a-f]{6}$/;
 export const tag = v => { const s = String(v ?? '').trim().toUpperCase(); return /^[A-Z0-9-]{1,12}$/.test(s) ? s : undefined; };
 export const valid = f => f && HEX_OK.test(f.hex) && Number.isFinite(f.lat) && Number.isFinite(f.lon);
 
+// Hidden aircraft, dropped before anything is served or recorded:
+// - military: readsb dbFlags bit 1, set by adsb.fi / adsb.lol from their aircraft databases
+// - BLOCK_LIST env var (comma separated ICAO hex codes or registrations): owners who asked to be hidden.
+//   Kept in the deployment's environment, not the repo, so the list itself stays private.
+const BLOCK = new Set(String(process.env.BLOCK_LIST || '').split(',').map(v => v.trim().toUpperCase().replace(/^~/, '')).filter(Boolean));
+export const MIL_SEEN = new Set();   // hexes flagged military by any source this instance has seen (OpenSky has no such flag)
+export const hidden = f => {
+  if (f.x && (f.x.dbFlags & 1)) { MIL_SEEN.add(f.hex); return true; }
+  return MIL_SEEN.has(f.hex) || BLOCK.has(f.hex.toUpperCase().replace(/^~/, '')) || (!!f.reg && BLOCK.has(f.reg));
+};
+
 export function convert(a, now, src) {
   const ground = a.alt_baro === 'ground', x = {};
   for (const k of X_FIELDS) if (k in a) x[k] = a[k];
@@ -27,6 +38,6 @@ export async function tile(url, src) {
   if (!r.ok) throw new Error(src + ' http ' + r.status);
   const d = await r.json();
   const now = d.now > 1e12 ? d.now / 1000 : d.now || Date.now() / 1000;
-  return (d.aircraft || d.ac || []).filter(a => 'lat' in a).map(a => convert(a, now, src)).filter(valid);
+  return (d.aircraft || d.ac || []).filter(a => 'lat' in a).map(a => convert(a, now, src)).filter(f => valid(f) && !hidden(f));
 }
 export const sleep = ms => new Promise(r => setTimeout(r, ms));

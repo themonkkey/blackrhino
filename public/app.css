@@ -231,6 +231,11 @@ body.v3d.has-flight #scope,body.v3d.has-flight #ctrl,body.v3d.has-flight #src{di
   transform:translate(-50%,calc(-100% - var(--off,26px)))}
 .lbl.sel::after{content:"";position:absolute;left:50%;top:100%;width:1px;height:calc(var(--off,26px) - 6px);background:linear-gradient(var(--edge-2),transparent)}
 
+/* map-data attribution on the 3D pages (Esri asks for "Powered by Esri" on the map) */
+#attr{position:absolute;right:12px;bottom:12px;z-index:450;max-width:min(560px,calc(100% - 300px));text-align:right;font:400 10px/1.5 var(--font);color:rgba(238,245,250,.55);text-shadow:0 1px 2px #000;pointer-events:auto}
+#attr a{color:rgba(238,245,250,.75);text-decoration:none}#attr a:hover{color:var(--sky)}
+body.has-flight #attr{bottom:auto;top:62px}
+
 /* ---------- mid widths: tools collapse to icons, search narrows ---------- */
 @media (max-width:1180px) and (min-width:701px){
   .tb span{display:none}.tb{padding:0 10px}
@@ -263,5 +268,7 @@ body.v3d.has-flight #scope,body.v3d.has-flight #ctrl,body.v3d.has-flight #src{di
   #fhud{bottom:calc(66px + env(safe-area-inset-bottom));width:calc(100% - 16px)}
   .fh-grid{grid-template-columns:repeat(3,1fr)}.fh-grid div:nth-child(n+4){display:none}
   .fh-cams{margin-left:0;width:100%}.fh-cams button{flex:1}
-  .leaflet-control-attribution{display:none}
+  .leaflet-control-attribution{display:block;font-size:8.5px!important;margin-bottom:68px!important}
+  #attr{left:8px;right:8px;max-width:none;bottom:calc(70px + env(safe-area-inset-bottom));font-size:8.5px;text-align:center}
+  body.has-flight #attr{bottom:auto;top:calc(58px + env(safe-area-inset-top))}
 }

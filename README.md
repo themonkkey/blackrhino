@@ -68,6 +68,8 @@ Everything fits the free plans (Vercel Hobby, Cloudflare Workers Free + D1). Not
 1. **App (Vercel).** Fork, import into Vercel, deploy. Set env vars:
    - `CONTACT_URL`: your repo or site; adsb.fi and adsb.lol ask for a contact in the User-Agent.
    - `HISTORY_API`: your worker origin (step 2). Leave unset to skip the OpenSky merge.
+   - `BLOCK_LIST` (optional): comma-separated ICAO hex codes or registrations to hide, for owners who ask.
+     Aircraft flagged military by adsb.fi / adsb.lol are always hidden. Kept in the environment so the list stays private.
 2. **History worker (optional, Cloudflare).**
    ```bash
    cd history-worker

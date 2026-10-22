@@ -82,7 +82,7 @@ fetch('https://tiles.openfreemap.org/styles/dark').then(r => r.json()).then(st =
     }
   }
   L.maplibreGL({style: st, attribution: '<a href="https://openfreemap.org" target="_blank" rel="noopener">OpenFreeMap</a> &copy; <a href="https://www.openmaptiles.org/" target="_blank" rel="noopener">OpenMapTiles</a> &copy; <a href="https://www.openstreetmap.org/copyright" target="_blank" rel="noopener">OpenStreetMap</a> · data: adsb.fi, adsb.lol, OpenSky, adsbdb · <a href="/credits">credits</a> · <a href="/privacy">privacy</a>'}).addTo(map);
-}).catch(() => L.tileLayer('https://server.arcgisonline.com/ArcGIS/rest/services/Canvas/World_Dark_Gray_Base/MapServer/tile/{z}/{y}/{x}', {className: 'br-base', attribution: 'Tiles &copy; Esri', maxZoom: 16}).addTo(map));
+}).catch(() => L.tileLayer('https://server.arcgisonline.com/ArcGIS/rest/services/Canvas/World_Dark_Gray_Base/MapServer/tile/{z}/{y}/{x}', {className: 'br-base', attribution: 'Tiles <a href="https://www.esri.com" target="_blank" rel="noopener">Powered by Esri</a> · Esri, HERE, Garmin', maxZoom: 16}).addTo(map));
 
 // All planes + trails are drawn on ONE canvas (no per-plane DOM nodes).
 const cv = document.getElementById('fx'), ctx = cv.getContext('2d');

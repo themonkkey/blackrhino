@@ -1,6 +1,6 @@
 // GET /api/flights -> every aircraft over India. Vercel's CDN caches the answer (s-maxage), so one
 // function run is shared by all users; adsb.fi allows ~1 request/s, so tiles are fetched in sequence.
-import {TILES, tile, sleep, tag, valid} from './_adsb.js';
+import {TILES, tile, sleep, tag, valid, hidden} from './_adsb.js';
 
 export const config = {maxDuration: 30};
 
@@ -39,7 +39,7 @@ export default async function handler(req, res) {
         // relay records: keep only well-formed ones, strings forced to safe shapes
         const f = o && {...o, hex: String(o.hex || '').toLowerCase(), flight: tag(o.flight) || '', reg: tag(o.reg), type: tag(o.type),
           squawk: /^\d{4}$/.test(o.squawk) ? o.squawk : undefined, country: typeof o.country === 'string' ? o.country.slice(0, 40) : undefined};
-        if (!valid(f)) continue;
+        if (!valid(f) || hidden(f)) continue;
         const prev = merged.get(f.hex);
         if (!prev) { merged.set(f.hex, f); os.n++; }               // aircraft the ADS-B aggregators don't see
         else if (f.ts > prev.ts + 5) merged.set(f.hex, {...prev, lat: f.lat, lon: f.lon, alt: f.alt, ground: f.ground,
