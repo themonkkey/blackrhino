@@ -26,14 +26,16 @@ FT.init = hooks => {
   apt.innerHTML = '<span id="aptClose">×</span><div id="aptBody"></div>';
   document.body.appendChild(apt);
   const btn = document.createElement('button');
-  btn.id = 'bApt'; btn.textContent = 'Airports';
-  document.getElementById('q').insertAdjacentElement('beforebegin', btn);
+  btn.id = 'bApt'; btn.className = 'tb'; btn.title = 'Airport boards';
+  btn.innerHTML = '<svg viewBox="0 0 24 24" aria-hidden="true"><path d="M12 3v18"/><path d="M8 21h8"/><path d="M5 9h14l-2 4H7z"/></svg><span>Airports</span>';
+  const tools = document.getElementById('tools');   // pages with a toolbar get the buttons there, others next to search
+  if (tools) tools.prepend(btn); else document.getElementById('q').insertAdjacentElement('beforebegin', btn);
   btn.onclick = () => FT.openAirport(null);
   document.getElementById('aptClose').onclick = () => FT.closeAirport();
   // "Install app" button (Android/desktop Chrome); iOS uses Share -> Add to Home Screen
   const inst = document.createElement('button');
-  inst.id = 'bInstall'; inst.textContent = 'Install';
-  btn.insertAdjacentElement('beforebegin', inst);
+  inst.id = 'bInstall'; inst.className = 'tb wide'; inst.textContent = 'Install app';
+  if (tools) tools.append(inst); else btn.insertAdjacentElement('beforebegin', inst);
   let deferred = null;
   addEventListener('beforeinstallprompt', e => { e.preventDefault(); deferred = e; inst.style.display = 'inline-block'; });
   addEventListener('appinstalled', () => inst.style.display = 'none');
@@ -397,12 +399,13 @@ FT.flightHTML = (p, nowS) => {
       <div><div class="fx-cs">${esc(d.flight || d.hex.toUpperCase())}${d.fi && d.fi !== d.flight ? `<small>${esc(d.fi)}</small>` : ''}</div>
       <div class="fx-meta">${esc([airline, d.model || (ac && ac.model) || d.type, d.reg].filter(Boolean).join(' · ') || 'Unknown aircraft')}</div></div></div>
     <span class="chip ${s.cls}">${s.label}</span>
-    ${s.estimated ? `<div class="fx-est"><b>ESTIMATED · NOT LIVE</b><span>Last radar contact${s.lastAlt != null ? ' at ' + fmt(s.lastAlt) + ' ft' : ''}, ${Math.max(1, Math.round(s.silentFor / 60))} min ago. Receivers can't see aircraft this low near this airport, so position and landing time are predicted from the last fix${s.ml ? ', live wind and past approaches' : ' and a standard approach path'}${s.rwy ? `. Runway ${esc(s.rwy)}${s.byWind ? ' (from wind)' : ' (a guess)'}` : ''}.</span></div>` : ''}
+    ${s.estimated ? `<div class="fx-est"><b>Estimated, not live</b><span>Last radar contact${s.lastAlt != null ? ' at ' + fmt(s.lastAlt) + ' ft' : ''}, ${Math.max(1, Math.round(s.silentFor / 60))} min ago. Receivers can't see aircraft this low near this airport, so position and landing time are predicted from the last fix${s.ml ? ', live wind and past approaches' : ' and a standard approach path'}${s.rwy ? `. Runway ${esc(s.rwy)}${s.byWind ? ' (from wind)' : ' (a guess)'}` : ''}.</span></div>` : ''}
     ${route}
     <div class="fx-tiles">
       ${tile('Altitude', altTxt, d.ground ? '' : 'ft')}${tile('Speed', fmt(d.gs) ?? '-', 'kt')}${tile('Heading', String(Math.round(d.track || 0) % 360).padStart(3, '0') + '°', '')}
       ${tile('Vertical', d.vr ? (d.vr > 0 ? '+' : '') + fmt(Math.round(d.vr / 50) * 50) : '0', 'ft/min')}${tile(s.estimated ? 'Lands ~' : 'ETA', s.eta ? s.eta.toLocaleTimeString('en-IN', IST) : '-', s.estimated && s.range ? s.range + ' · 80% range' : s.etaMin ? Math.round(s.etaMin) + ' min · IST' : 'IST')}${tile('Squawk', esc(d.squawk || '-'), SQUAWK[d.squawk] ? esc(SQUAWK[d.squawk]) : '')}
     </div>
+    <!--acts-->
     ${d.emergency || SQUAWK[d.squawk] && d.squawk !== '2000' ? `<div class="fx-emg">Emergency: ${esc(SQUAWK[d.squawk] || x.emergency || 'declared')}</div>` : ''}
     ${sec('Flight', [
       row('Callsign', esc(d.flight)), row('Flight number', esc(d.fi)),
@@ -471,6 +474,7 @@ FT.openAirport = icao => {
   FT.aptSel = icao || null;
   if (icao) { const a = FT.apt(icao); FT.hooks.focusAirport?.(a); loadMetar(icao); }
   document.getElementById('apt').style.display = 'block';
+  const fl = document.getElementById('flist'); if (fl) fl.style.display = 'none';   // one left panel at a time
   FT.hooks.airportChanged?.();
   FT.renderAirport();
 };

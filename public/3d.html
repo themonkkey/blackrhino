@@ -13,76 +13,38 @@
 <title>BlackRhino · 3D</title>
 <script>window.__first = fetch('/api/flights').then(r => r.json()).catch(() => null);
 if ('serviceWorker' in navigator) navigator.serviceWorker.register('sw.js');</script>
-<link rel="stylesheet" href="shared.css">
 <script src="config.js"></script>
 <script src="shared.js"></script>
 <script src="eta.js"></script>
 <script src="shared-extra.js"></script>
 <style>
-:root{--panel:rgba(14,19,30,.9);--line:#232c3d;--fg:#e6ebf5;--mute:#8592a8;--acc:#7cc8ff}
-*{box-sizing:border-box}html,body{margin:0;height:100%;background:#05070d;color:var(--fg);overflow:hidden;font:13px/1.4 ui-sans-serif,-apple-system,"Segoe UI",sans-serif}
 #gl{position:absolute;inset:0}#labels{position:absolute;inset:0;pointer-events:none}
-.hud{position:absolute;z-index:10}
-#top{top:12px;left:12px;display:flex;align-items:center;flex-wrap:wrap;max-width:calc(100% - 24px)}
-#info{right:12px;top:12px;max-height:calc(100% - 110px);overflow:auto;display:none}
-#ctrl{left:12px;bottom:12px;width:260px;display:none}
-body.show-ctrl #ctrl{display:block}
-#ctrl label{display:block;color:var(--mute);margin-top:8px;font-size:12px}#ctrl input[type=range]{width:100%}
-#src{right:12px;bottom:12px}
-body.has-flight #src{display:none}
-#loader{position:absolute;inset:0;z-index:50;display:grid;place-items:center;background:radial-gradient(ellipse at center,#0d1424 0%,#05070d 70%);transition:opacity .8s}
-#loader.done{opacity:0;pointer-events:none}
-#loader .box{text-align:center}
-#loader .ring{width:54px;height:54px;border-radius:50%;border:2px solid rgba(255,255,255,.08);border-top-color:#7cc8ff;animation:spin 1s linear infinite;margin:0 auto 16px}
-@keyframes spin{to{transform:rotate(360deg)}}
-#loader b{display:block;font-size:15px;letter-spacing:.02em}#loader span{color:var(--mute);font-size:12px}
-.lbl{font:600 11px Inter,sans-serif;color:#e8edf6;text-shadow:0 1px 3px #000,0 0 8px rgba(0,0,0,.8);white-space:nowrap;transform:translate(8px,-50%)}
-.lbl.apt{color:#cbd5e1;font-weight:700;letter-spacing:.04em}
-.lbl.apt::before{content:"";position:absolute;left:-9px;top:50%;width:6px;height:6px;margin-top:-3px;border-radius:50%;background:#fff;box-shadow:0 0 0 2px rgba(0,0,0,.5)}
-.lbl.sel{font-size:13px;color:#c4e7ff;background:rgba(8,12,22,.6);padding:3px 8px;border-radius:999px;border:1px solid rgba(124,200,255,.4);transform:translate(-50%,-180%)}
-#fhud{display:none;left:50%;transform:translateX(-50%);bottom:calc(14px + env(safe-area-inset-bottom));width:min(720px,calc(100% - 24px));padding:12px 16px}
-body.has-flight #fhud{display:block}
+html,body{overflow:hidden}
 body.has-flight #info{display:none}
 body.has-flight.show-info #info{display:block}
-.fh-top{display:flex;align-items:center;gap:10px;flex-wrap:wrap}
-.fh-top b{font-size:20px;letter-spacing:.5px;color:var(--acc)}
-#hSt{font-weight:600;font-size:12px;padding:2px 8px;border-radius:999px;background:rgba(255,255,255,.1)}
-#fhud.estimated{border-color:rgba(234,179,8,.6)!important}#fhud.estimated #hSt{background:rgba(234,179,8,.25);color:#fde68a}
-.fh-cams{margin-left:auto;display:flex;gap:4px}
-.fh-route{display:flex;align-items:center;gap:10px;margin:10px 0 8px}
-.fh-route b{font-size:15px;min-width:34px;text-align:center}
-.fh-bar{flex:1;height:4px;border-radius:2px;background:rgba(255,255,255,.15);position:relative}
-.fh-bar i{position:absolute;inset:0 auto 0 0;border-radius:2px;background:linear-gradient(90deg,#7cc8ff,#c4e7ff)}
-.fh-bar em{position:absolute;top:50%;transform:translate(-50%,-55%) rotate(90deg);font-style:normal;font-size:15px;color:#fff}
-.fh-grid{display:grid;grid-template-columns:repeat(5,1fr);gap:6px}
-.fh-grid div{display:flex;flex-direction:column}
-.fh-grid small{font-size:10px;letter-spacing:1px;color:var(--mute)}
-.fh-grid b{font-size:24px;line-height:1.15}
-.fh-grid span{font-size:11px;color:var(--mute)}
-#watchBar{bottom:auto!important;top:70px}
+#watchBar{bottom:auto!important;top:66px}
 body.has-flight #watchBar{display:none}
-@media(max-width:700px){.fh-grid{grid-template-columns:repeat(3,1fr)}.fh-grid b{font-size:19px}.fh-cams{margin-left:0;width:100%}.fh-cams button{flex:1}
-  #top .stat:not(:first-of-type){display:none}}
 </style>
 <link rel="preconnect" href="https://fonts.googleapis.com"><link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
 <link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Montserrat+Alternates:wght@400;500;600&family=Montserrat:wght@400;500;600;700&family=JetBrains+Mono:wght@400;500&display=swap">
-<link rel="stylesheet" href="premium.css">
-<link rel="stylesheet" href="blackrhino.css">
+<link rel="stylesheet" href="app.css">
 <script type="importmap">{"imports": {"three": "https://cdn.jsdelivr.net/npm/three@0.160.0/build/three.module.js",
   "three/addons/": "https://cdn.jsdelivr.net/npm/three@0.160.0/examples/jsm/"}}</script>
 </head>
-<body>
+<body class="v3d">
 <div id="gl"></div><div id="labels"></div>
 <div id="loader"><div class="box"><div class="ring"></div><b>Building India in 3D</b><span id="ldTxt">terrain, imagery, sky…</span></div></div>
 <div id="top" class="hud">
-  <h1 onclick="location.href='/'" title="blackrhino.in"><span class="logo"><svg viewBox="0 0 64 64"><path d="M5 31C5 23 11 18 20 18L32 18C35 18 37.5 18.8 39.5 20.5L40 15.8C40.3 14 42.6 13.8 43 15.6L43.6 21.6C46.5 23.5 48.5 26.5 50 29.5L51.3 26.4L53.2 31C55.5 27.5 58.2 22.5 61.5 19C61 25.5 59.5 31.5 57.5 35.5C59.2 37.5 59.7 40.5 58.8 43.2C56.3 45.7 51.2 45.8 47.6 44.2L44.6 45.4L44 54L37.4 54L37 48L21 48L20.5 54L13.8 54L13.2 46.2C8 43.8 5 38.2 5 31Z"/></svg></span>blackrhino<span class="br-dot"></span><small>3D · live</small></h1>
-  <span class="stat"><span class="dot"></span>Aircraft <b id="nAll">0</b></span>
-  <span class="stat">Updated <b id="age">-</b></span>
-  <input type="text" id="q" placeholder="Flight, reg, airport…" autocomplete="off">
-  <button id="bDay" title="Light the scene as at midday (flights stay live)">☀ Day</button>
-  <button id="bCtrl">⚙</button>
-  <a href="/map">2D map →</a>
+  <a class="brand" href="/" title="blackrhino home"><svg viewBox="0 0 64 64"><path d="M5 31C5 23 11 18 20 18L32 18C35 18 37.5 18.8 39.5 20.5L40 15.8C40.3 14 42.6 13.8 43 15.6L43.6 21.6C46.5 23.5 48.5 26.5 50 29.5L51.3 26.4L53.2 31C55.5 27.5 58.2 22.5 61.5 19C61 25.5 59.5 31.5 57.5 35.5C59.2 37.5 59.7 40.5 58.8 43.2C56.3 45.7 51.2 45.8 47.6 44.2L44.6 45.4L44 54L37.4 54L37 48L21 48L20.5 54L13.8 54L13.2 46.2C8 43.8 5 38.2 5 31Z"/></svg>blackrhino<span class="br-dot"></span></a>
+  <span class="live"><span class="dot"></span><b id="nAll">0</b> live</span>
+  <input type="search" id="q" placeholder="Flight, registration or airport" autocomplete="off" enterkeyhint="search" aria-label="Search">
 </div>
+<nav id="tools" class="hud" aria-label="Tools">
+  <span class="sep wide"></span>
+  <button id="bDay" class="tb" title="Light the scene as at midday (flights stay live)"><svg viewBox="0 0 24 24" aria-hidden="true"><circle cx="12" cy="12" r="4"/><path d="M12 2v2M12 20v2M4.9 4.9l1.4 1.4M17.7 17.7l1.4 1.4M2 12h2M20 12h2M4.9 19.1l1.4-1.4M17.7 6.3l1.4-1.4"/></svg><span>Day</span></button>
+  <button id="bCtrl" class="tb" title="Scene settings"><svg viewBox="0 0 24 24" aria-hidden="true"><path d="M4 6h10M18 6h2M4 12h4M12 12h8M4 18h12M20 18h0"/><circle cx="16" cy="6" r="2"/><circle cx="10" cy="12" r="2"/><circle cx="18" cy="18" r="2"/></svg><span>Scene</span></button>
+  <span class="seg"><a href="/map">2D</a><a class="on" href="/3d">3D</a></span>
+</nav>
 <div id="info" class="hud"><span id="close">×</span>
   <div class="btns" style="margin:0 0 10px;display:flex;gap:6px;flex-wrap:wrap"><button data-cam="chase">Chase</button><button data-cam="cockpit">Cockpit</button><button data-cam="orbit">Orbit</button><button data-cam="free">Free</button></div>
   <div id="infoBody"></div>
@@ -92,23 +54,26 @@ body.has-flight #watchBar{display:none}
     <span class="fh-cams"><button data-cam="chase">Chase</button><button data-cam="cockpit">Cockpit</button><button data-cam="orbit">Orbit</button><button data-cam="free">Free</button><button id="hDet">Details</button></span></div>
   <div class="fh-route"><b id="hO">-</b><div class="fh-bar"><i id="hBar"></i><em id="hPlane">✈</em></div><b id="hD">-</b></div>
   <div class="fh-grid">
-    <div><small>ALTITUDE</small><b id="hAlt">-</b><span>ft</span></div>
-    <div><small>GROUND SPEED</small><b id="hGs">-</b><span>kt</span></div>
-    <div><small>HEADING</small><b id="hHdg">-</b><span>°</span></div>
-    <div><small>VERTICAL</small><b id="hVs">-</b><span>ft/min</span></div>
+    <div><small>Altitude</small><b id="hAlt">-</b><span>ft</span></div>
+    <div><small>Ground speed</small><b id="hGs">-</b><span>kt</span></div>
+    <div><small>Heading</small><b id="hHdg">-</b><span>°</span></div>
+    <div><small>Vertical</small><b id="hVs">-</b><span>ft/min</span></div>
     <div><small>ETA</small><b id="hEta">-</b><span id="hEtaS">IST</span></div>
   </div>
 </div>
 <div id="ctrl" class="hud">
-  <div class="stat" style="margin-bottom:4px">Altitude (ft)</div>
-  <div class="bar" style="background:linear-gradient(90deg,#5f6d79,#1b6fd1,#2f8de4,#4aa8f0,#7cc8ff,#9fd6ff)"></div>
-  <div class="lab" style="display:flex;justify-content:space-between;color:var(--mute);font-size:11px;margin-top:3px"><span>gnd</span><span>10k</span><span>20k</span><span>30k</span><span>40k+</span></div>
+  <div class="ttl" style="color:var(--ink-2);font-size:12px">Scene</div>
   <label>Height exaggeration <b id="veV">6×</b><input type="range" id="ve" min="1" max="12" step="1" value="6"></label>
   <label>Plane size <b id="szV">1.0×</b><input type="range" id="sz" min="0.5" max="3" step="0.1" value="1"></label>
   <label>Time of day <b id="todV">live</b><input type="range" id="tod" min="-1" max="24" step="0.25" value="-1"></label>
-  <label><input type="checkbox" id="clouds" checked> live satellite clouds</label>
-  <label><input type="checkbox" id="labels" checked> labels</label>
-  <label><input type="checkbox" id="trails" checked> trail of selected flight</label>
+  <label class="chk"><input type="checkbox" id="clouds" checked> Live satellite clouds</label>
+  <label class="chk"><input type="checkbox" id="labels" checked> Labels</label>
+  <label class="chk"><input type="checkbox" id="trails" checked> Trail of the selected flight</label>
+</div>
+<div id="scope" class="hud">
+  <div class="ttl">Altitude, feet</div>
+  <div class="bar"></div><div class="lab"><span>gnd</span><span>10k</span><span>20k</span><span>30k</span><span>40k+</span></div>
+  <div class="meta"><span>updated <b id="age">-</b></span><button class="ib" id="bSrc" style="margin-left:auto" title="Data sources">i</button></div>
 </div>
 <div id="src" class="hud">connecting…</div>
 
@@ -451,7 +416,8 @@ function renderInfo() {
 }
 $('close').onclick = () => document.body.classList.contains('has-flight') ? document.body.classList.remove('show-info') : select(null);
 $('hDet').onclick = () => document.body.classList.toggle('show-info');
-$('bCtrl').onclick = () => document.body.classList.toggle('show-ctrl');
+$('bCtrl').onclick = () => $('bCtrl').classList.toggle('on', document.body.classList.toggle('show-ctrl'));
+$('bSrc').onclick = e => { document.body.classList.toggle('show-src'); e.currentTarget.classList.toggle('on'); };
 const ray = new THREE.Raycaster(), ndc = new THREE.Vector2();
 let downAt = null;
 renderer.domElement.addEventListener('pointerdown', e => downAt = [e.clientX, e.clientY]);
@@ -515,7 +481,7 @@ const DAY_TOD = 12.5;
 function setDay(on) {
   $('tod').value = on ? DAY_TOD : -1;
   $('todV').textContent = on ? '12:30 IST (day mode)' : 'live';
-  $('bDay').textContent = on ? '🌙 Live sky' : '☀ Day';
+  $('bDay').querySelector('span').textContent = on ? 'Live sky' : 'Day';
   $('bDay').classList.toggle('on', on);
   try { localStorage.setItem('ft-daymode', on ? '1' : '0'); } catch (e) {}
   updateSun();

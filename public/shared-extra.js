@@ -48,11 +48,13 @@ FT.selectFlight = (hex, p) => {
 const baseHTML = FT.flightHTML;
 FT.flightHTML = (p, nowS) => {
   const on = FT.isBookmarked(p.d);
-  return `<div style="display:flex;gap:6px;margin:0 0 8px;flex-wrap:wrap">
-      <button data-bm="${p.d.hex}" class="${on ? 'on' : ''}" style="font-size:12px;padding:4px 9px">${on ? '★ Bookmarked' : '☆ Bookmark'}</button>
-      ${p.d.flight ? `<button data-hist="${esc(p.d.flight)}" style="font-size:12px;padding:4px 9px">History</button>` : ''}
-      <button data-onboard="${p.d.hex}" class="${onboard && onboard.hex === p.d.hex ? 'on' : ''}" style="font-size:12px;padding:4px 9px">${onboard && onboard.hex === p.d.hex ? '📍 On board · GPS live' : '📍 I\'m on this flight'}</button>
-    </div>` + baseHTML(p, nowS) + (histHTML[p.d.flight] || '');
+  const ob = onboard && onboard.hex === p.d.hex;
+  const acts = `<div class="fx-acts">
+      <button data-bm="${p.d.hex}" class="${on ? 'on' : ''}" title="Keep this flight in your bookmarks">${on ? '★ Saved' : '☆ Save'}</button>
+      ${p.d.flight ? `<button data-hist="${esc(p.d.flight)}" title="Earlier flights with this callsign">History</button>` : ''}
+      <button data-onboard="${p.d.hex}" class="${ob ? 'on' : ''}" title="Track this flight with your phone's GPS">${ob ? 'GPS live' : "I'm on board"}</button><!--acts-end-->
+    </div>`;
+  return baseHTML(p, nowS).replace('<!--acts-->', acts) + (histHTML[p.d.flight] || '');
 };
 
 // ---------- on-board GPS: your own phone tracks your own flight (works in airplane mode) ----------
@@ -282,8 +284,8 @@ const baseInit = FT.init;
 FT.init = hooks => {
   const r = baseInit(hooks);
   const b = document.createElement('button');
-  b.id = 'bList'; b.textContent = 'Flights';
-  b.style.cssText = 'background:#1b2436;border:1px solid var(--line);color:var(--fg);border-radius:6px;padding:5px 10px;cursor:pointer;font:inherit';
+  b.id = 'bList'; b.className = 'tb'; b.title = 'Flights list, filters, bookmarks and map layers';
+  b.innerHTML = '<svg viewBox="0 0 24 24" aria-hidden="true"><path d="M4 6h16M4 12h16M4 18h10"/></svg><span>Flights</span>';
   document.getElementById('bApt').insertAdjacentElement('afterend', b);
   b.onclick = () => { const el = panel(); el.style.display === 'block' ? el.style.display = 'none' : FT.openList(); };
   document.getElementById('info').addEventListener('click', e => {
@@ -297,8 +299,8 @@ FT.init = hooks => {
   });
   // visible "filters on" chip so a saved filter never silently hides aircraft
   const chip = document.createElement('button');
-  chip.id = 'fChip'; chip.style.cssText = 'display:none;border-radius:999px;padding:5px 11px;font:600 12px Inter,sans-serif;cursor:pointer;background:rgba(124,200,255,.15);color:#c4e7ff;border:1px solid rgba(124,200,255,.45)';
-  b.insertAdjacentElement('afterend', chip);
+  chip.id = 'fChip'; chip.style.display = 'none';
+  document.getElementById('q').insertAdjacentElement('afterend', chip);
   chip.onclick = () => { F = {...DEF}; save('ft-filters', F); FT.hooks.refilter?.(); FT.renderList(); };
   setInterval(() => {
     const on = FT.filterActive() && F.onlyMap;

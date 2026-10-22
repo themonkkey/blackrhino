@@ -1,7 +1,7 @@
 // Cache-first for libraries, models and map tiles so repeat visits open instantly.
 // Pages are network-first (cache only as offline fallback); live flight data (/api) is never cached.
-const LIB = 'ft-lib-v3', TILES = 'ft-tiles-v1', PAGES = 'br-pages-v16', MAX_TILES = 4000;
-const SHELL = ['./', 'map', '3d', 'globe', 'share', 'live', 'config.js', 'shared.js', 'shared-extra.js', 'eta.js', 'fir.json', 'shared.css', 'premium.css', 'blackrhino.css', 'airports.json', 'manifest.webmanifest',
+const LIB = 'ft-lib-v3', TILES = 'ft-tiles-v1', PAGES = 'br-pages-v17', MAX_TILES = 4000;
+const SHELL = ['./', 'map', '3d', 'globe', 'share', 'live', 'config.js', 'shared.js', 'shared-extra.js', 'eta.js', 'fir.json', 'app.css', 'airports.json', 'manifest.webmanifest',
   'icons/icon-192.png', 'icons/icon-512.png', 'icons/favicon-32.png', 'icons/mark.svg'];
 
 self.addEventListener('install', e => {

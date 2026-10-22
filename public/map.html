@@ -3,7 +3,7 @@
 <head>
 <meta charset="utf-8">
 <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
-<meta name="theme-color" content="#0b0f17">
+<meta name="theme-color" content="#020304">
 <meta name="mobile-web-app-capable" content="yes">
 <meta name="apple-mobile-web-app-capable" content="yes">
 <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
@@ -19,65 +19,34 @@ if ('serviceWorker' in navigator) navigator.serviceWorker.register('sw.js');</sc
 <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/maplibre-gl@5.24.0/dist/maplibre-gl.css" integrity="sha384-uTttxo/aOKbdE5RlD/SPzSDoDmNvGlUYPjONi2MN/b7c9HPSvW07OIuyP7uL6jxK" crossorigin="anonymous">
 <script src="https://cdn.jsdelivr.net/npm/maplibre-gl@5.24.0/dist/maplibre-gl.js" integrity="sha384-5+cfbwT0iiub6VsQAdn6yz16nr6sDiQoHx6tm4O8OVYXHYOxcffFmCJBL0dgdvGp" crossorigin="anonymous" defer></script>
 <script src="https://cdn.jsdelivr.net/npm/@maplibre/maplibre-gl-leaflet@0.1.4/leaflet-maplibre-gl.js" integrity="sha384-tXYNKOHx4T02jMP7YYCtBxPIv1B5gaA5mcVPBzqMp6d7VzWzxJgI2aWF/nJLrQdS" crossorigin="anonymous" defer></script>
-<link rel="stylesheet" href="shared.css">
 <script src="config.js" defer></script>
 <script src="shared.js" defer></script>
 <script src="eta.js" defer></script>
 <script src="shared-extra.js" defer></script>
-<style>
-:root{--bg:#0b0f17;--panel:rgba(14,19,30,.92);--line:#232c3d;--fg:#e6ebf5;--mute:#8592a8;--acc:#7cc8ff;--sel:#ffffff}
-*{box-sizing:border-box}html,body{margin:0;height:100%;background:var(--bg);color:var(--fg);font:13px/1.4 ui-sans-serif,-apple-system,"Segoe UI",sans-serif}
-#map{position:absolute;inset:0;background:#0b0f17}
-.hud{position:absolute;z-index:500;background:var(--panel);border:1px solid var(--line);border-radius:10px;backdrop-filter:blur(6px)}
-#top{top:12px;left:12px;padding:10px 12px;display:flex;gap:14px;align-items:center;flex-wrap:wrap;max-width:calc(100% - 24px)}
-#top h1{font-size:14px;margin:0;letter-spacing:.3px}
-.dot{width:8px;height:8px;border-radius:50%;background:#3ddc84;display:inline-block;margin-right:6px;box-shadow:0 0 8px #3ddc84;animation:p 1.6s infinite}
-@keyframes p{50%{opacity:.35}}
-.stat{color:var(--mute)}.stat b{color:var(--fg);font-variant-numeric:tabular-nums}
-#q{background:#151c2a;border:1px solid var(--line);color:var(--fg);border-radius:6px;padding:5px 8px;width:150px}
-#info{right:12px;top:12px;width:300px;padding:14px;display:none}
-#info h2{margin:0 0 2px;font-size:20px;color:var(--acc)}
-#info .sub{color:var(--mute);margin-bottom:10px}
-#info table{width:100%;border-collapse:collapse}#info td{padding:3px 0;border-bottom:1px solid var(--line)}#info td:last-child{text-align:right;font-variant-numeric:tabular-nums}
-#close{position:absolute;right:10px;top:8px;cursor:pointer;color:var(--mute);font-size:18px}
-#legend{left:12px;bottom:12px;padding:8px 10px}
-#legend .bar{width:180px;height:8px;border-radius:4px;background:linear-gradient(90deg,#5f6d79,#2f8de4,#4aa8f0,#7cc8ff,#c4e7ff,#ffffff)}
-#legend .lab{display:flex;justify-content:space-between;color:var(--mute);font-size:11px;margin-top:3px}
-#src{right:12px;bottom:12px;padding:6px 10px;color:var(--mute);font-size:11px;max-width:300px}
-#fx{position:absolute;inset:0;z-index:400;pointer-events:none}
-.leaflet-container{background:#0b0f17}
-.fir-label{background:rgba(8,20,35,.6);border:0;color:#7dd3fc;font-weight:600;font-size:11px;box-shadow:none}
-.fir-label:before{display:none}
-.leaflet-control-attribution{background:rgba(0,0,0,.5)!important;color:#667!important}.leaflet-control-attribution a{color:#889!important}
-@media(max-width:640px){#info{left:12px;right:12px;width:auto;top:auto;bottom:60px}#q{width:110px}}
-#alert{position:absolute;top:70px;left:50%;transform:translateX(-50%);z-index:1200;display:none;gap:8px;flex-direction:column;align-items:center}
-#alert .a{display:flex;gap:10px;align-items:center;padding:8px 12px;background:rgba(40,6,4,.92);border:1px solid #ff3b2f;color:#ffd9d6;font:600 12px 'JetBrains Mono',monospace;cursor:pointer;box-shadow:0 0 24px rgba(255,59,47,.35)}
-#alert .a b{color:#ff3b2f}#alert .a i{font-style:normal;color:#ff8f87;padding-left:6px;cursor:pointer}
-#rp{position:absolute;left:50%;bottom:14px;transform:translateX(-50%);z-index:1100;display:none;align-items:center;gap:10px;padding:8px 12px;width:min(560px,calc(100% - 24px))}
-#rp input[type=range]{flex:1;accent-color:#7cc8ff}#rp button{background:#0d1620;border:1px solid var(--line);color:var(--fg);padding:4px 9px;cursor:pointer;font:inherit}
-#rp .t{font:500 12px 'JetBrains Mono',monospace;color:#c4e7ff;min-width:92px}
-#keys{position:absolute;top:50%;left:50%;transform:translate(-50%,-50%);z-index:1300;display:none;padding:14px 18px;font-size:12px;line-height:1.9}
-#keys kbd{display:inline-block;min-width:22px;text-align:center;border:1px solid var(--line);padding:0 5px;margin-right:8px;font:500 11px 'JetBrains Mono',monospace;color:#c4e7ff}
-</style>
+<style>#map{position:absolute;inset:0}#fx{position:absolute;inset:0;z-index:400;pointer-events:none}</style>
 <link rel="preconnect" href="https://fonts.googleapis.com"><link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
 <link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Montserrat+Alternates:wght@400;500;600&family=Montserrat:wght@400;500;600;700&family=JetBrains+Mono:wght@400;500&display=swap">
-<link rel="stylesheet" href="premium.css">
-<link rel="stylesheet" href="blackrhino.css">
+<link rel="stylesheet" href="app.css">
 </head>
 <body>
 <div id="map"></div><canvas id="fx"></canvas>
 <div id="top" class="hud">
-  <h1 onclick="location.href='/'" title="blackrhino.in"><span class="logo"><svg viewBox="0 0 64 64"><path d="M5 31C5 23 11 18 20 18L32 18C35 18 37.5 18.8 39.5 20.5L40 15.8C40.3 14 42.6 13.8 43 15.6L43.6 21.6C46.5 23.5 48.5 26.5 50 29.5L51.3 26.4L53.2 31C55.5 27.5 58.2 22.5 61.5 19C61 25.5 59.5 31.5 57.5 35.5C59.2 37.5 59.7 40.5 58.8 43.2C56.3 45.7 51.2 45.8 47.6 44.2L44.6 45.4L44 54L37.4 54L37 48L21 48L20.5 54L13.8 54L13.2 46.2C8 43.8 5 38.2 5 31Z"/></svg></span>blackrhino<span class="br-dot"></span><small>India · live</small></h1>
-  <span class="stat"><span class="dot"></span>In view <b id="nView">0</b></span>
-  <span class="stat">Total <b id="nAll">0</b></span>
-  <span class="stat">Updated <b id="age">-</b></span>
-  <input id="q" placeholder="Flight, reg, airport…" autocomplete="off">
-  <label class="stat"><input type="checkbox" id="trails" checked> trails</label>
-  <button id="bReplay" title="Replay the last 3 hours seen on this device (R)" style="background:#1b2436;border:1px solid var(--line);color:var(--fg);border-radius:6px;padding:5px 10px;cursor:pointer;font:inherit">Replay</button>
-  <a href="3d" style="color:var(--acc);text-decoration:none;font-weight:600">3D view →</a>
+  <a class="brand" href="/" title="blackrhino home"><svg viewBox="0 0 64 64"><path d="M5 31C5 23 11 18 20 18L32 18C35 18 37.5 18.8 39.5 20.5L40 15.8C40.3 14 42.6 13.8 43 15.6L43.6 21.6C46.5 23.5 48.5 26.5 50 29.5L51.3 26.4L53.2 31C55.5 27.5 58.2 22.5 61.5 19C61 25.5 59.5 31.5 57.5 35.5C59.2 37.5 59.7 40.5 58.8 43.2C56.3 45.7 51.2 45.8 47.6 44.2L44.6 45.4L44 54L37.4 54L37 48L21 48L20.5 54L13.8 54L13.2 46.2C8 43.8 5 38.2 5 31Z"/></svg>blackrhino<span class="br-dot"></span></a>
+  <span class="live"><span class="dot"></span><b id="nAll">0</b> live</span>
+  <input id="q" type="search" placeholder="Flight, registration or airport" autocomplete="off" enterkeyhint="search" aria-label="Search">
 </div>
+<nav id="tools" class="hud" aria-label="Tools">
+  <span class="sep wide"></span>
+  <button id="bReplay" class="tb" title="Replay the last 3 hours seen on this device (R)"><svg viewBox="0 0 24 24" aria-hidden="true"><path d="M3 12a9 9 0 1 0 3-6.7L3 8"/><path d="M3 3v5h5"/><path d="M12 7v5l3 2"/></svg><span>Replay</span></button>
+  <span class="seg"><a class="on" href="/map">2D</a><a href="3d">3D</a></span>
+</nav>
 <div id="info" class="hud"><span id="close">×</span><div id="infoBody"></div></div>
-<div id="legend" class="hud"><div class="stat" style="margin-bottom:4px">Altitude (ft)</div><div class="bar"></div><div class="lab"><span>gnd</span><span>10k</span><span>20k</span><span>30k</span><span>40k+</span></div></div>
+<div id="scope" class="hud">
+  <div class="ttl">Altitude, feet</div>
+  <div class="bar"></div><div class="lab"><span>gnd</span><span>10k</span><span>20k</span><span>30k</span><span>40k+</span></div>
+  <div class="meta"><span><b id="nView">0</b> in view</span><span>updated <b id="age">-</b></span>
+    <label title="Trails (T)"><input type="checkbox" id="trails" checked> trails</label><button class="ib" id="bSrc" title="Data sources">i</button></div>
+</div>
 <div id="src" class="hud">connecting…</div>
 <div id="alert"></div>
 <div id="rp" class="hud"><button id="rpPlay">▶</button><button id="rpSpd">×30</button><input id="rpPos" type="range" min="0" max="1000" value="1000"><span class="t" id="rpT">-</span><button id="rpLive">Live</button></div>
@@ -137,11 +106,12 @@ let view = planes, replay = null;   // replay: {t, playing, speed} while scrubbi
 let selected = null, lastFetch = 0, serverOffset = 0, dirty = true, moving = false, zooming = false;
 resize();
 
-const STOPS = [[0,'#2f8de4'],[10000,'#4aa8f0'],[20000,'#7cc8ff'],[30000,'#c4e7ff'],[40000,'#ffffff']];
+// calm ramp: deep blue low, pale sky high; only the selected plane is pure white
+const STOPS = [[0,'#2c6fb8'],[10000,'#3f8fd6'],[20000,'#64b0ec'],[30000,'#8fcaf6'],[40000,'#cfe9fb']];
 function altColor(alt, ground) {
-  if (ground || alt == null) return '#5f6d79';
+  if (ground || alt == null) return '#4b5866';
   for (let i = STOPS.length - 1; i >= 0; i--) if (alt >= STOPS[i][0]) return STOPS[i][1];
-  return '#2f8de4';
+  return '#2c6fb8';
 }
 
 // Dead reckoning: move from last fix along track at ground speed.
@@ -213,7 +183,7 @@ function frame(ts) {
 
 function draw() {
   const t = replay ? replay.t : nowS(), z = map.getZoom(), showTrails = document.getElementById('trails').checked;
-  const sz = z >= 9 ? 28 : z >= 7 ? 24 : 21;
+  const sz = z >= 10 ? 28 : z >= 9 ? 25 : z >= 8 ? 22 : z >= 7 ? 20 : z >= 6 ? 17 : 15;   // calm at country zoom, rich close in
   ctx.setTransform(DPR, 0, 0, DPR, 0, 0);
   ctx.clearRect(0, 0, W, H);
   drawAirports(z);
@@ -251,7 +221,11 @@ function draw() {
   const sel = !replay && selected && planes.get(selected);
   const ap = FT.aptSel;
   for (const p of view.values()) if (p.vis && p !== sel) drawPlane(p, sz, ap && (p.d.o === ap || p.d.d === ap) && p.d.rv !== false ? 'apt' : false);
-  if (sel && sel.vis) drawPlane(sel, sz + 8, true);
+  if (sel && sel.vis) {   // selected: soft sky halo, then the plane in white
+    ctx.beginPath(); ctx.arc(sel.x, sel.y, sz * .95, 0, 7); ctx.fillStyle = 'rgba(124,200,255,.16)'; ctx.fill();
+    ctx.lineWidth = 1; ctx.strokeStyle = 'rgba(124,200,255,.55)'; ctx.stroke();
+    drawPlane(sel, sz + 6, true);
+  }
   if (replay && z >= 8) drawLabels(view);
   document.getElementById('nView').textContent = inView;
   if (sel && document.getElementById('follow')?.checked) map.panTo([sel.lat, sel.lon], {animate: false});
@@ -329,8 +303,8 @@ function drawPlane(p, s, isSel) {
     ctx.globalAlpha = .95; ctx.fillStyle = 'rgba(3,4,5,.6)'; ctx.fill(SH);
     ctx.lineWidth = isSel ? 2 : 1.5; ctx.strokeStyle = isSel ? '#fff' : '#7cc8ff'; ctx.setLineDash([2.6, 1.8]); ctx.stroke(SH); ctx.setLineDash([]);
   } else {
-    ctx.fillStyle = p.col; ctx.fill(SH);
-    ctx.lineWidth = isSel === 'apt' ? 1.6 : isSel ? 1.4 : .7; ctx.strokeStyle = isSel === 'apt' ? '#7cc8ff' : isSel ? '#fff' : '#000'; ctx.stroke(SH);
+    ctx.fillStyle = isSel === true ? '#ffffff' : p.col; ctx.fill(SH);
+    ctx.lineWidth = isSel === 'apt' ? 1.6 : isSel ? 1.4 : .7; ctx.strokeStyle = isSel === 'apt' ? '#7cc8ff' : isSel ? '#020304' : 'rgba(0,0,0,.75)'; ctx.stroke(SH);
   }
   ctx.setTransform(DPR, 0, 0, DPR, 0, 0); ctx.globalAlpha = 1;
 }
@@ -372,11 +346,12 @@ function select(hex) {
 function renderInfo() {
   const p = planes.get(selected); if (!p) return;
   const f = document.getElementById('follow')?.checked, sc = document.getElementById('info').scrollTop;
-  document.getElementById('infoBody').innerHTML = FT.flightHTML(p, nowS()) +
-    `<label class="stat" style="display:block;margin-top:10px"><input type="checkbox" id="follow" ${f ? 'checked' : ''}> follow this flight</label>`;
+  document.getElementById('infoBody').innerHTML = FT.flightHTML(p, nowS()).replace('<!--acts-end-->',
+    `<label class="${f ? 'on' : ''}" title="Keep the map centred on this flight (F)"><input type="checkbox" id="follow" ${f ? 'checked' : ''} hidden>Follow</label>`);
   document.getElementById('info').scrollTop = sc;
 }
 document.getElementById('close').onclick = () => select(null);
+document.getElementById('info').addEventListener('change', e => { if (e.target.id === 'follow') e.target.parentNode.classList.toggle('on', e.target.checked); });
 document.getElementById('trails').onchange = () => dirty = true;
 setInterval(() => {
   if (document.hidden) return;
@@ -476,7 +451,7 @@ addEventListener('keydown', e => {
   if (k === '/') { e.preventDefault(); document.getElementById('q').focus(); }
   else if (k === 'Escape') { help.style.display = 'none'; if (replay) exitReplay(); else if (document.getElementById('apt').style.display === 'block') FT.closeAirport(); else select(null); }
   else if (k === 't' || k === 'T') { const c = document.getElementById('trails'); c.checked = !c.checked; dirty = true; }
-  else if ((k === 'f' || k === 'F') && document.getElementById('follow')) { const c = document.getElementById('follow'); c.checked = !c.checked; }
+  else if ((k === 'f' || k === 'F') && document.getElementById('follow')) { const c = document.getElementById('follow'); c.checked = !c.checked; c.parentNode.classList.toggle('on', c.checked); }
   else if (k === 'r' || k === 'R') replay ? exitReplay() : enterReplay();
   else if (k === ' ' && replay) { e.preventDefault(); togglePlay(); }
   else if (k === '?') help.style.display = help.style.display === 'block' ? 'none' : 'block';
@@ -539,15 +514,15 @@ function setReplayT(t) {
   document.getElementById('rpT').textContent = fmtT(replay.t) + ' IST';
 }
 function enterReplay() {
-  if (snaps.length < 2) { const b = document.getElementById('bReplay'); b.textContent = 'Replay: recording…'; setTimeout(() => b.textContent = 'Replay', 2000); return; }
+  if (snaps.length < 2) { const b = document.querySelector('#bReplay span'); b.textContent = 'Recording…'; setTimeout(() => b.textContent = 'Replay', 2000); return; }
   select(null); replay = {t: 0, playing: false, speed: 30};
-  rp.style.display = 'flex'; document.getElementById('legend').style.display = 'none';
+  rp.style.display = 'flex'; document.getElementById('bReplay').classList.add('on'); 
   const [a, b] = rpRange(); setReplayT(Math.max(a, b - 1800));   // start 30 min back
   togglePlay();
 }
 function exitReplay() {
   if (!replay) return;
-  replay = null; view = planes; rp.style.display = 'none'; document.getElementById('legend').style.display = ''; dirty = true;
+  replay = null; view = planes; rp.style.display = 'none'; document.getElementById('bReplay').classList.remove('on');  dirty = true;
 }
 function togglePlay() { replay.playing = !replay.playing; document.getElementById('rpPlay').textContent = replay.playing ? '❚❚' : '▶'; }
 let rpLast = 0;
@@ -560,6 +535,7 @@ let rpLast = 0;
   }
   rpLast = ts;
 })(0);
+document.getElementById('bSrc').onclick = e => { document.body.classList.toggle('show-src'); e.currentTarget.classList.toggle('on'); };
 document.getElementById('bReplay').onclick = () => replay ? exitReplay() : enterReplay();
 document.getElementById('rpPlay').onclick = togglePlay;
 document.getElementById('rpLive').onclick = exitReplay;

@@ -16,86 +16,43 @@
 if ('serviceWorker' in navigator) navigator.serviceWorker.register('sw.js');</script>
 <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/cesium@1.121.0/Build/Cesium/Widgets/widgets.css" integrity="sha256-cCxa3z0W7H8cA8xft+y4I69sWfoZJ4n7LIWax6EfSgw=" crossorigin="anonymous">
 <script src="https://cdn.jsdelivr.net/npm/cesium@1.121.0/Build/Cesium/Cesium.js" integrity="sha256-WN2SBzMkFgQiXE0Q0nahM625Nll22Fl7uPWd8UNSAMA=" crossorigin="anonymous"></script>
-<link rel="stylesheet" href="shared.css">
 <script src="config.js"></script>
 <script src="shared.js"></script>
 <script src="eta.js"></script>
 <script src="shared-extra.js"></script>
 <style>
-:root{--panel:rgba(14,19,30,.9);--line:#232c3d;--fg:#e6ebf5;--mute:#8592a8;--acc:#7cc8ff}
-*{box-sizing:border-box}html,body{margin:0;height:100%;background:#000;color:var(--fg);font:13px/1.4 ui-sans-serif,-apple-system,"Segoe UI",sans-serif;overflow:hidden}
-#cesium{position:absolute;inset:0}
-.cesium-viewer-bottom{display:none}
-.hud{position:absolute;z-index:10;background:var(--panel);border:1px solid var(--line);border-radius:10px;backdrop-filter:blur(6px)}
-#top{top:12px;left:12px;padding:10px 12px;display:flex;gap:14px;align-items:center;flex-wrap:wrap;max-width:calc(100% - 24px)}
-#top h1{font-size:14px;margin:0}
-.dot{width:8px;height:8px;border-radius:50%;background:#3ddc84;display:inline-block;margin-right:6px;box-shadow:0 0 8px #3ddc84;animation:p 1.6s infinite}
-@keyframes p{50%{opacity:.35}}
-.stat{color:var(--mute)}.stat b{color:var(--fg);font-variant-numeric:tabular-nums}
-input[type=text]{background:#151c2a;border:1px solid var(--line);color:var(--fg);border-radius:6px;padding:5px 8px;width:150px}
-a{color:var(--acc);text-decoration:none}
-#info{right:12px;top:12px;width:310px;padding:14px;display:none}
-#info h2{margin:0 0 2px;font-size:20px;color:var(--acc)}
-#info .sub{color:var(--mute);margin-bottom:10px}
-#info table{width:100%;border-collapse:collapse}#info td{padding:3px 0;border-bottom:1px solid var(--line)}#info td:last-child{text-align:right;font-variant-numeric:tabular-nums}
-#close{position:absolute;right:10px;top:8px;cursor:pointer;color:var(--mute);font-size:18px}
-.btns{display:flex;gap:6px;margin-top:10px;flex-wrap:wrap}
-button{background:#1b2436;border:1px solid var(--line);color:var(--fg);border-radius:6px;padding:6px 10px;cursor:pointer;font:inherit}
-button.on{background:var(--acc);color:#111;border-color:var(--acc)}
-#ctrl{left:12px;bottom:12px;padding:10px 12px;width:240px}
-#ctrl .bar{height:8px;border-radius:4px;background:linear-gradient(90deg,#5f6d79,#2f8de4,#4aa8f0,#7cc8ff,#c4e7ff,#ffffff)}
-#ctrl .lab{display:flex;justify-content:space-between;color:var(--mute);font-size:11px;margin:3px 0 8px}
-#ctrl label{display:block;color:var(--mute);margin-top:4px}
-#ctrl input[type=range]{width:100%}
-#src{right:12px;bottom:12px;padding:6px 10px;color:var(--mute);font-size:11px;max-width:300px}
-@media(max-width:700px){#info,#apt{max-height:38vh!important}}
-body.tracking #ctrl{display:none}
-body.tracking #src{display:none}
-#fhud{display:none;left:50%;transform:translateX(-50%);bottom:calc(14px + env(safe-area-inset-bottom));width:min(720px,calc(100% - 24px));
-  padding:12px 16px;background:rgba(8,12,22,.55);backdrop-filter:blur(14px) saturate(140%);-webkit-backdrop-filter:blur(14px) saturate(140%);
-  border:1px solid rgba(255,255,255,.12);border-radius:16px;box-shadow:0 10px 40px rgba(0,0,0,.35)}
+#cesium{position:absolute;inset:0}.cesium-viewer-bottom{display:none}
+html,body{overflow:hidden}
+body:not(.tracking) #ctrl{display:block}
+body.tracking #ctrl,body.tracking #src{display:none}
+body.tracking.show-ctrl #ctrl{display:block}
+body.tracking #fhud{display:none}
 body.tracking.has-flight #fhud{display:block}
-#fhud.estimated{border-color:rgba(234,179,8,.6)}
-#fhud.estimated #hSt{background:rgba(234,179,8,.25);color:#fde68a}
+body.has-flight:not(.tracking) #fhud{display:none}
 body.tracking #info{display:none!important}
 body.tracking.show-info #info{display:block!important}
-body.tracking #watchBar{bottom:auto!important;top:70px}
+body.tracking #watchBar{bottom:auto!important;top:66px}
 body.tracking.has-flight #watchBar{display:none}
-.fh-top{display:flex;align-items:center;gap:10px;flex-wrap:wrap}
-.fh-top b{font-size:20px;letter-spacing:.5px;color:var(--acc)}
-#hSt{font-weight:600;font-size:12px;padding:2px 8px;border-radius:999px;background:rgba(255,255,255,.1)}
-.fh-cams{margin-left:auto;display:flex;gap:4px}
-.fh-cams button{padding:4px 9px;font-size:12px;background:rgba(255,255,255,.08);border-color:rgba(255,255,255,.12)}
-.fh-cams button.on{background:var(--acc);color:#111;border-color:var(--acc)}
-.fh-route{display:flex;align-items:center;gap:10px;margin:10px 0 8px}
-.fh-route b{font-size:15px;min-width:34px;text-align:center}
-.fh-bar{flex:1;height:4px;border-radius:2px;background:rgba(255,255,255,.15);position:relative}
-.fh-bar i{position:absolute;inset:0 auto 0 0;border-radius:2px;background:linear-gradient(90deg,#7cc8ff,#c4e7ff)}
-.fh-bar em{position:absolute;top:50%;transform:translate(-50%,-55%) rotate(0deg);font-style:normal;font-size:16px;color:#fff;text-shadow:0 0 6px rgba(0,0,0,.6)}
-.fh-grid{display:grid;grid-template-columns:repeat(5,1fr);gap:6px}
-.fh-grid div{display:flex;flex-direction:column}
-.fh-grid small{font-size:10px;letter-spacing:1px;color:var(--mute)}
-.fh-grid b{font-size:24px;font-weight:600;font-variant-numeric:tabular-nums;line-height:1.15}
-.fh-grid span{font-size:11px;color:var(--mute)}
-@media(max-width:700px){.fh-grid{grid-template-columns:repeat(3,1fr)}.fh-grid b{font-size:19px}.fh-cams{margin-left:0;width:100%}.fh-cams button{flex:1}}
-body.tracking #bCtrl{display:inline-block}
-body.tracking.show-ctrl #ctrl{display:block}   /* globe centres the plane: keep it above the sheet */
+#ctrl .bar{height:4px;background:linear-gradient(90deg,#4b5866 0 8%,#2c6fb8 8%,#3f8fd6,#64b0ec,#8fcaf6,#cfe9fb)}
+#ctrl .lab{display:flex;justify-content:space-between;margin:5px 0 4px;font:400 10px var(--mono);color:var(--mute)}
 </style>
 <link rel="preconnect" href="https://fonts.googleapis.com"><link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
 <link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Montserrat+Alternates:wght@400;500;600&family=Montserrat:wght@400;500;600;700&family=JetBrains+Mono:wght@400;500&display=swap">
-<link rel="stylesheet" href="premium.css">
-<link rel="stylesheet" href="blackrhino.css">
+<link rel="stylesheet" href="app.css">
 </head>
 <body>
 <div id="cesium"></div>
 <div id="top" class="hud">
-  <h1 onclick="location.href='/'" title="blackrhino.in"><span class="logo"><svg viewBox="0 0 64 64"><path d="M5 31C5 23 11 18 20 18L32 18C35 18 37.5 18.8 39.5 20.5L40 15.8C40.3 14 42.6 13.8 43 15.6L43.6 21.6C46.5 23.5 48.5 26.5 50 29.5L51.3 26.4L53.2 31C55.5 27.5 58.2 22.5 61.5 19C61 25.5 59.5 31.5 57.5 35.5C59.2 37.5 59.7 40.5 58.8 43.2C56.3 45.7 51.2 45.8 47.6 44.2L44.6 45.4L44 54L37.4 54L37 48L21 48L20.5 54L13.8 54L13.2 46.2C8 43.8 5 38.2 5 31Z"/></svg></span>blackrhino<span class="br-dot"></span><small>3D · live</small></h1>
-  <span class="stat"><span class="dot"></span>Aircraft <b id="nAll">0</b></span>
-  <span class="stat">Updated <b id="age">-</b></span>
-  <input type="text" id="q" placeholder="Flight, reg, airport…" autocomplete="off">
-  <button id="bCtrl" class="mob">⚙</button>
-  <a href="/map">2D map →</a>
+  <a class="brand" href="/" title="blackrhino home"><svg viewBox="0 0 64 64"><path d="M5 31C5 23 11 18 20 18L32 18C35 18 37.5 18.8 39.5 20.5L40 15.8C40.3 14 42.6 13.8 43 15.6L43.6 21.6C46.5 23.5 48.5 26.5 50 29.5L51.3 26.4L53.2 31C55.5 27.5 58.2 22.5 61.5 19C61 25.5 59.5 31.5 57.5 35.5C59.2 37.5 59.7 40.5 58.8 43.2C56.3 45.7 51.2 45.8 47.6 44.2L44.6 45.4L44 54L37.4 54L37 48L21 48L20.5 54L13.8 54L13.2 46.2C8 43.8 5 38.2 5 31Z"/></svg>blackrhino<span class="br-dot"></span></a>
+  <span class="live"><span class="dot"></span><b id="nAll">0</b> live</span>
+  <input type="search" id="q" placeholder="Flight, registration or airport" autocomplete="off" enterkeyhint="search" aria-label="Search">
 </div>
+<nav id="tools" class="hud" aria-label="Tools">
+  <span class="sep wide"></span>
+  <button id="bCtrl" class="tb mob" title="Globe settings"><svg viewBox="0 0 24 24" aria-hidden="true"><path d="M4 6h10M18 6h2M4 12h4M12 12h8M4 18h12"/><circle cx="16" cy="6" r="2"/><circle cx="10" cy="12" r="2"/><circle cx="18" cy="18" r="2"/></svg><span>Settings</span></button>
+  <span class="seg"><a href="/map">2D</a><a href="/3d">3D</a><a class="on" href="/globe">Globe</a></span>
+</nav>
+<span id="age" hidden>-</span>
 <div id="info" class="hud"><span id="close">×</span>
   <div class="btns" style="margin:0 0 8px"><button id="bChase">Chase cam</button><button id="bCockpit">Cockpit</button><button id="bOrbit">Orbit</button><button id="bFree">Free</button></div>
   <div id="infoBody"></div>
@@ -105,10 +62,10 @@ body.tracking.show-ctrl #ctrl{display:block}   /* globe centres the plane: keep 
     <span class="fh-cams"><button data-cam="chase">Chase</button><button data-cam="cockpit">Cockpit</button><button data-cam="orbit">Orbit</button><button data-cam="free">Free</button><button id="hDet">Details</button></span></div>
   <div class="fh-route"><b id="hO">-</b><div class="fh-bar"><i id="hBar"></i><em id="hPlane">✈</em></div><b id="hD">-</b></div>
   <div class="fh-grid">
-    <div><small>ALTITUDE</small><b id="hAlt">-</b><span>ft</span></div>
-    <div><small>GROUND SPEED</small><b id="hGs">-</b><span>kt</span></div>
-    <div><small>HEADING</small><b id="hHdg">-</b><span>°</span></div>
-    <div><small>VERTICAL</small><b id="hVs">-</b><span>ft/min</span></div>
+    <div><small>Altitude</small><b id="hAlt">-</b><span>ft</span></div>
+    <div><small>Ground speed</small><b id="hGs">-</b><span>kt</span></div>
+    <div><small>Heading</small><b id="hHdg">-</b><span>°</span></div>
+    <div><small>Vertical</small><b id="hVs">-</b><span>ft/min</span></div>
     <div><small>ETA</small><b id="hEta">-</b><span id="hEtaS">IST</span></div>
   </div>
 </div>
