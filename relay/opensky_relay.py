@@ -17,7 +17,7 @@ BBOX = "lamin=5&lomin=66&lamax=37&lomax=99"
 _cfg = os.path.join(os.path.dirname(os.path.abspath(__file__)), "..", "public", "config.js")
 API = os.environ.get("BR_HISTORY_API") or (re.search(r"historyApi:\s*'([^']*)'", open(_cfg).read()) or [None, ""])[1]
 PUSH = API.rstrip("/") + "/ingest/opensky"   # key goes in the X-Key header, never the URL
-UA = {"User-Agent": "blackrhino opensky-relay (" + os.environ.get("BR_CONTACT", "https://github.com/blackrhino-in/blackrhino") + ")"}
+UA = {"User-Agent": "blackrhino opensky-relay (" + os.environ.get("BR_CONTACT", "https://github.com/themonkkey/blackrhino") + ")"}
 POS_SRC = ["ADS-B", "ASTERIX", "MLAT", "FLARM"]
 
 

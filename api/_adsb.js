@@ -1,6 +1,6 @@
 // Shared by the Vercel functions: readsb-format (adsb.fi / adsb.lol) -> app flight records.
 // upstream feeds ask for a contact: set CONTACT_URL to your repo or site
-export const UA = {'User-Agent': `blackrhino/1.0 (+${process.env.CONTACT_URL || 'https://github.com/blackrhino-in/blackrhino'})`};
+export const UA = {'User-Agent': `blackrhino/1.0 (+${process.env.CONTACT_URL || 'https://github.com/themonkkey/blackrhino'})`};
 // 12 circles of 250 nm cover India + approaches
 export const TILES = [[28.5, 77], [26, 85], [22.5, 88.5], [19, 73], [17.5, 78.5], [13, 77.5], [10, 77], [23, 72], [23, 80], [26, 92], [32, 75], [20, 84]];
 const X_FIELDS = ['alt_geom', 'ias', 'tas', 'mach', 'wd', 'ws', 'oat', 'tat', 'track_rate', 'roll', 'mag_heading',

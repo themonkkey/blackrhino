@@ -10,5 +10,12 @@
     "check": "for f in api/*.js history-worker/index.js public/*.js; do node --check \"$f\" || exit 1; done"
   },
   "version": "1.0.0",
-  "description": "Open-source live flight tracker for India: 2D radar, 3D India with real airports, airport boards, history and live GPS sharing."
+  "description": "Open-source live flight tracker for India: 2D radar, 3D India with real airports, airport boards, history and live GPS sharing.",
+  "author": "Aryan Singh",
+  "homepage": "https://blackrhino.in",
+  "repository": {
+    "type": "git",
+    "url": "https://github.com/themonkkey/blackrhino.git"
+  },
+  "bugs": "https://github.com/themonkkey/blackrhino/issues"
 }
