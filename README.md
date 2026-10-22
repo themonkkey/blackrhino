@@ -17,6 +17,9 @@ Installable as a PWA. Runs entirely on free tiers.
 - **Airports**: runways, live METAR, boards (arrivals, departures, on ground, nearby, earlier).
 - **3D India** (Three.js): terrain + imagery, live EUMETSAT infrared clouds, chase / cockpit / orbit cameras. `/globe` is the CesiumJS version.
 - **Flights panel**: sortable list, filters, fleet per airline, bookmarks, recently viewed.
+- **2D map extras**: aircraft silhouettes by type (jet, widebody, turboprop, light, helicopter), trails coloured by altitude,
+  squawk 7500 / 7600 / 7700 alert banner with a pulsing beacon, shareable URLs (`/map?ll=lat,lon,zoom&sel=hex`),
+  keyboard shortcuts (`?` lists them), and **replay**: the device keeps the last 3 h of snapshots in IndexedDB and scrubs back through them.
 - **History**: a Cloudflare Worker records the feed every 10 minutes into D1 (per-flight paths, airport "earlier" boards).
 - **Estimated approaches**: runway-aware physics plan corrected by a gradient-boosted model (`eta/`), shown with an 80% range.
 - **Live sharing**: `/share` records your phone's GPS on board (works offline, uploads on reconnect); friends watch on `/live`.

@@ -50,6 +50,14 @@ if ('serviceWorker' in navigator) navigator.serviceWorker.register('sw.js');</sc
 .fir-label:before{display:none}
 .leaflet-control-attribution{background:rgba(0,0,0,.5)!important;color:#667!important}.leaflet-control-attribution a{color:#889!important}
 @media(max-width:640px){#info{left:12px;right:12px;width:auto;top:auto;bottom:60px}#q{width:110px}}
+#alert{position:absolute;top:70px;left:50%;transform:translateX(-50%);z-index:1200;display:none;gap:8px;flex-direction:column;align-items:center}
+#alert .a{display:flex;gap:10px;align-items:center;padding:8px 12px;background:rgba(40,6,4,.92);border:1px solid #ff3b2f;color:#ffd9d6;font:600 12px 'JetBrains Mono',monospace;cursor:pointer;box-shadow:0 0 24px rgba(255,59,47,.35)}
+#alert .a b{color:#ff3b2f}#alert .a i{font-style:normal;color:#ff8f87;padding-left:6px;cursor:pointer}
+#rp{position:absolute;left:50%;bottom:14px;transform:translateX(-50%);z-index:1100;display:none;align-items:center;gap:10px;padding:8px 12px;width:min(560px,calc(100% - 24px))}
+#rp input[type=range]{flex:1;accent-color:#7cc8ff}#rp button{background:#0d1620;border:1px solid var(--line);color:var(--fg);padding:4px 9px;cursor:pointer;font:inherit}
+#rp .t{font:500 12px 'JetBrains Mono',monospace;color:#c4e7ff;min-width:92px}
+#keys{position:absolute;top:50%;left:50%;transform:translate(-50%,-50%);z-index:1300;display:none;padding:14px 18px;font-size:12px;line-height:1.9}
+#keys kbd{display:inline-block;min-width:22px;text-align:center;border:1px solid var(--line);padding:0 5px;margin-right:8px;font:500 11px 'JetBrains Mono',monospace;color:#c4e7ff}
 </style>
 <link rel="preconnect" href="https://fonts.googleapis.com"><link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
 <link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Montserrat+Alternates:wght@400;500;600&family=Montserrat:wght@400;500;600;700&family=JetBrains+Mono:wght@400;500&display=swap">
@@ -65,11 +73,15 @@ if ('serviceWorker' in navigator) navigator.serviceWorker.register('sw.js');</sc
   <span class="stat">Updated <b id="age">-</b></span>
   <input id="q" placeholder="Flight, reg, airport…" autocomplete="off">
   <label class="stat"><input type="checkbox" id="trails" checked> trails</label>
+  <button id="bReplay" title="Replay the last 3 hours seen on this device (R)" style="background:#1b2436;border:1px solid var(--line);color:var(--fg);border-radius:6px;padding:5px 10px;cursor:pointer;font:inherit">Replay</button>
   <a href="3d" style="color:var(--acc);text-decoration:none;font-weight:600">3D view →</a>
 </div>
 <div id="info" class="hud"><span id="close">×</span><div id="infoBody"></div></div>
 <div id="legend" class="hud"><div class="stat" style="margin-bottom:4px">Altitude (ft)</div><div class="bar"></div><div class="lab"><span>gnd</span><span>10k</span><span>20k</span><span>30k</span><span>40k+</span></div></div>
 <div id="src" class="hud">connecting…</div>
+<div id="alert"></div>
+<div id="rp" class="hud"><button id="rpPlay">▶</button><button id="rpSpd">×30</button><input id="rpPos" type="range" min="0" max="1000" value="1000"><span class="t" id="rpT">-</span><button id="rpLive">Live</button></div>
+<div id="keys" class="hud"><div class="stat" style="margin-bottom:6px">Keyboard</div><div><kbd>/</kbd>search</div><div><kbd>Esc</kbd>close panel / deselect</div><div><kbd>T</kbd>trails on/off</div><div><kbd>F</kbd>follow selected flight</div><div><kbd>R</kbd>replay</div><div><kbd>Space</kbd>play / pause replay</div><div><kbd>+ −</kbd>zoom</div><div><kbd>?</kbd>this help</div></div>
 
 
 <script>
@@ -100,6 +112,19 @@ fetch('https://tiles.openfreemap.org/styles/dark').then(r => r.json()).then(st =
 // All planes + trails are drawn on ONE canvas (no per-plane DOM nodes).
 const cv = document.getElementById('fx'), ctx = cv.getContext('2d');
 const PLANE = new Path2D('M12 2c.8 0 1.3.9 1.3 2v5.2l7.7 4.6v2l-7.7-2.4v4.8l2.3 1.7V21L12 20l-3.6 1v-1.1l2.3-1.7v-4.8L3 15.8v-2l7.7-4.6V4c0-1.1.5-2 1.3-2z');
+// silhouettes by aircraft class (24x24 box, nose up): jet (PLANE), straight-wing prop, helicopter
+const PROP = new Path2D('M12 2.5c.7 0 1.1.7 1.1 1.6V9h8.2v2.3l-8.2.9v6.1l2.7 1.6V21L12 20.3 8.2 21v-1.1l2.7-1.6v-6.1l-8.2-.9V9h8.2V4.1c0-.9.4-1.6 1.1-1.6z');
+const HELI = new Path2D('M12 5.2a3.4 4.4 0 1 1 0 8.8a3.4 4.4 0 1 1 0-8.8zM11.2 13.6h1.6v7h2.4v1.4H8.8v-1.4h2.4zM3 3.4l.9-.9 16.9 16.9-.9.9zM20.1 2.5l.9.9L4.1 20.3l-.9-.9z');
+const HELI_T = /^(EC[0-9]|H1[2-7]|H160|AS[3-5]|AW1|A1[0-9]9|B0[6-7]|B4[0-3]|B2|R22|R44|R66|S76|S92|MI[0-9]|ALH|LCH|BK17|EH10|NH90)/;
+const PROP_T = /^(AT[4-7]|DH8|DHC|B190|BE[2-9]0|C208|C212|D228|DO2|PC1[2-2]|PC6|SF34|JS3|E120|L410|AN2|AN3|C130|C30J|P180|SW4|F27|F50)/;
+const WIDE_T = /^(A30|A31|A33|A34|A35|A38|B74|B76|B77|B78|MD11|IL76|C17|A400|KC10|KC46)/;
+const LIGHT_T = /^(C1[5-9]|C17[0-9]|C182|C206|C210|P28|PA[0-9]|DA[2-6]|SR2|TB[0-9]|C42|ZLIN|TECN|P2008|M20)/;
+function shapeOf(d) {
+  if (d._sh) return d._sh;
+  const t = String(d.type || '').toUpperCase(), c = d.category;
+  return d._sh = c === 'A7' || HELI_T.test(t) ? [HELI, 0.9] : PROP_T.test(t) ? [PROP, 0.95] : c === 'A1' || LIGHT_T.test(t) ? [PROP, 0.72]
+    : c === 'A5' || WIDE_T.test(t) ? [PLANE, 1.25] : [PLANE, 1];
+}
 let W = 0, H = 0, DPR = 1;
 function resize() {
   DPR = Math.min(devicePixelRatio || 1, 2); W = innerWidth; H = innerHeight;
@@ -108,6 +133,7 @@ function resize() {
 addEventListener('resize', resize);
 
 const planes = new Map();   // hex -> {d, pts, err, lat, lon, x, y}
+let view = planes, replay = null;   // replay: {t, playing, speed} while scrubbing history
 let selected = null, lastFetch = 0, serverOffset = 0, dirty = true, moving = false, zooming = false;
 resize();
 
@@ -140,6 +166,8 @@ async function poll(first) {
     lastFetch = Date.now();
     FT.ingest(j);
     ingest(j.ac);
+    record(j);
+    if (wantSel && planes.has(wantSel)) { const h = wantSel; wantSel = null; select(h); }
     const m = j.meta;
     document.getElementById('src').innerHTML =
       `${m.adsbfi ? `adsb.fi: ${m.adsbfi}${m.opensky ? `<br>OpenSky: ${m.opensky}` : ''}` : `OpenSky: ${m.opensky}${m.opensky_age != null ? ` (${m.opensky_age}s ago)` : ''}${m.quota ? ` · quota ${m.quota}` : ''}`}<br>adsb.lol: ${m.adsblol}<br>routes: ${m.routes || '-'} · ${FT.lookupStatus()}<br>positions between fixes are dead-reckoned`;
@@ -162,11 +190,12 @@ function ingest(list, partial) {
       p.err = {lat: p.lat - d.lat, lon: p.lon - d.lon, t: performance.now()};
     } else if (d.ts <= p.d.ts) continue;
     p.d = d; p.col = altColor(d.alt, d.ground);
-    p.pts.push([d.lat, d.lon]); if (p.pts.length > 120) p.pts.shift();
+    p.pts.push([d.lat, d.lon, d.ground ? null : d.alt]); if (p.pts.length > 120) p.pts.shift();
   }
   if (!partial) for (const [hex, p] of planes)
     if (!seen.has(hex) && t - p.d.ts > 90 && !FT.keepGhost(p, t)) { planes.delete(hex); if (selected === hex) select(null); }
   document.getElementById('nAll').textContent = planes.size;
+  checkAlerts();
   dirty = true;
   if (selected) renderInfo();
 }
@@ -183,15 +212,15 @@ function frame(ts) {
 }
 
 function draw() {
-  const t = nowS(), z = map.getZoom(), showTrails = document.getElementById('trails').checked;
+  const t = replay ? replay.t : nowS(), z = map.getZoom(), showTrails = document.getElementById('trails').checked;
   const sz = z >= 9 ? 28 : z >= 7 ? 24 : 21;
   ctx.setTransform(DPR, 0, 0, DPR, 0, 0);
   ctx.clearRect(0, 0, W, H);
   drawAirports(z);
-  const sel0 = selected && planes.get(selected);
+  const sel0 = !replay && selected && planes.get(selected);
   if (sel0) drawRoute(sel0);
   let inView = 0;
-  for (const p of planes.values()) {
+  for (const p of view.values()) {
     p.dv = p.est ? FT.virtual(p.d, t) : null;   // silent near destination: modelled approach
     const d = p.dv || p.d;
     const dt = Math.min(Math.max(t - d.ts, 0), 180);   // cap extrapolation at 3 min
@@ -207,17 +236,23 @@ function draw() {
     if (pt.x < -40 || pt.y < -40 || pt.x > W + 40 || pt.y > H + 40 || (!FT.onMap(d) && selected !== d.hex)) { p.vis = false; continue; }
     p.vis = true; inView++;
     if (showTrails && (z >= 7 || selected === d.hex) && p.pts.length) {
-      ctx.globalAlpha = selected === d.hex ? .9 : .5; ctx.strokeStyle = p.col; ctx.lineWidth = selected === d.hex ? 2 : 1.5;
-      ctx.beginPath();
-      for (const q of p.pts) { const a = map.latLngToContainerPoint(q); ctx.lineTo(a.x, a.y); }
-      ctx.lineTo(pt.x, pt.y); ctx.stroke(); ctx.globalAlpha = 1;
+      ctx.globalAlpha = selected === d.hex ? .9 : .5; ctx.lineWidth = selected === d.hex ? 2 : 1.5;
+      let col = null, prev = null;
+      for (const q of p.pts) {   // colour by the altitude at each fix; one stroke per run of the same colour
+        const a = map.latLngToContainerPoint(q), c = altColor(q[2], q[2] == null);
+        if (c !== col) { if (col) ctx.stroke(); ctx.strokeStyle = col = c; ctx.beginPath(); if (prev) ctx.moveTo(prev.x, prev.y); }
+        ctx.lineTo(a.x, a.y); prev = a;
+      }
+      if (col) { ctx.lineTo(pt.x, pt.y); ctx.stroke(); }
+      ctx.globalAlpha = 1;
     }
   }
   // planes on top of trails; selected last
-  const sel = selected && planes.get(selected);
+  const sel = !replay && selected && planes.get(selected);
   const ap = FT.aptSel;
-  for (const p of planes.values()) if (p.vis && p !== sel) drawPlane(p, sz, ap && (p.d.o === ap || p.d.d === ap) && p.d.rv !== false ? 'apt' : false);
+  for (const p of view.values()) if (p.vis && p !== sel) drawPlane(p, sz, ap && (p.d.o === ap || p.d.d === ap) && p.d.rv !== false ? 'apt' : false);
   if (sel && sel.vis) drawPlane(sel, sz + 8, true);
+  if (replay && z >= 8) drawLabels(view);
   document.getElementById('nView').textContent = inView;
   if (sel && document.getElementById('follow')?.checked) map.panTo([sel.lat, sel.lon], {animate: false});
 }
@@ -283,15 +318,19 @@ function drawRoute(p) {
 }
 
 function drawPlane(p, s, isSel) {
-  const k = s / 24;
+  const [SH, f] = shapeOf(p.d), k = s * f / 24;
+  if (EMG[p.d.squawk] || (p.d.emergency && p.d.emergency !== 'none')) {   // pulsing beacon ring
+    const ph = (performance.now() % 1400) / 1400;
+    ctx.beginPath(); ctx.arc(p.x, p.y, s * (.7 + ph * .6), 0, 7); ctx.strokeStyle = `rgba(255,59,47,${1 - ph})`; ctx.lineWidth = 2; ctx.stroke(); dirty = true;
+  }
   ctx.setTransform(DPR * k, 0, 0, DPR * k, 0, 0);
   ctx.translate(p.x / k, p.y / k); ctx.rotate((p.dv || p.d).track * Math.PI / 180); ctx.translate(-12, -12);
   if (p.est) {   // estimated, not live: hollow outline with a dashed edge
-    ctx.globalAlpha = .95; ctx.fillStyle = 'rgba(3,4,5,.6)'; ctx.fill(PLANE);
-    ctx.lineWidth = isSel ? 2 : 1.5; ctx.strokeStyle = isSel ? '#fff' : '#7cc8ff'; ctx.setLineDash([2.6, 1.8]); ctx.stroke(PLANE); ctx.setLineDash([]);
+    ctx.globalAlpha = .95; ctx.fillStyle = 'rgba(3,4,5,.6)'; ctx.fill(SH);
+    ctx.lineWidth = isSel ? 2 : 1.5; ctx.strokeStyle = isSel ? '#fff' : '#7cc8ff'; ctx.setLineDash([2.6, 1.8]); ctx.stroke(SH); ctx.setLineDash([]);
   } else {
-    ctx.fillStyle = p.col; ctx.fill(PLANE);
-    ctx.lineWidth = isSel === 'apt' ? 1.6 : isSel ? 1.4 : .7; ctx.strokeStyle = isSel === 'apt' ? '#7cc8ff' : isSel ? '#fff' : '#000'; ctx.stroke(PLANE);
+    ctx.fillStyle = p.col; ctx.fill(SH);
+    ctx.lineWidth = isSel === 'apt' ? 1.6 : isSel ? 1.4 : .7; ctx.strokeStyle = isSel === 'apt' ? '#7cc8ff' : isSel ? '#fff' : '#000'; ctx.stroke(SH);
   }
   ctx.setTransform(DPR, 0, 0, DPR, 0, 0); ctx.globalAlpha = 1;
 }
@@ -303,7 +342,7 @@ map.on('zoomstart', () => { zooming = true; cv.style.opacity = 0; });
 map.on('zoomend', () => { zooming = false; dirty = true; cv.style.opacity = 1; });
 map.on('click', e => {   // hit-test on canvas
   let best = null, bd = FT.touch ? 26 * 26 : 16 * 16;
-  for (const [hex, p] of planes) if (p.vis) {
+  if (!replay) for (const [hex, p] of planes) if (p.vis) {
     const dx = p.x - e.containerPoint.x, dy = p.y - e.containerPoint.y, dd = dx * dx + dy * dy;
     if (dd < bd) { bd = dd; best = hex; }
   }
@@ -317,13 +356,13 @@ map.on('click', e => {   // hit-test on canvas
 });
 map.getContainer().addEventListener('mousemove', e => {
   let hit = false;
-  for (const p of planes.values()) if (p.vis && Math.abs(p.x - e.clientX) < 10 && Math.abs(p.y - e.clientY) < 10) { hit = true; break; }
+  for (const p of view.values()) if (p.vis && Math.abs(p.x - e.clientX) < 10 && Math.abs(p.y - e.clientY) < 10) { hit = true; break; }
   if (!hit) for (const a of FT.airports) if (a._vis && Math.abs(a._x - e.clientX) < 9 && Math.abs(a._y - e.clientY) < 9) { hit = true; break; }
   map.getContainer().style.cursor = hit ? 'pointer' : '';
 });
 
 function select(hex) {
-  selected = hex; dirty = true;
+  selected = hex; dirty = true; if (typeof syncUrl === 'function') syncUrl();
   FT.selectFlight(hex, hex && planes.get(hex));
   const box = document.getElementById('info');
   if (!hex) { box.style.display = 'none'; return; }
@@ -395,6 +434,137 @@ function showTrack(pts) {
   trackLayer = L.polyline(pts.map(p => [p[1], p[2]]), {color: '#f472b6', weight: 3, opacity: .9}).addTo(map);
   map.fitBounds(trackLayer.getBounds(), {padding: [40, 40]});
 }
+
+// ---- squawk alerts: 7500 hijack, 7600 radio failure, 7700 emergency (or an ADS-B emergency status)
+const EMG = {'7500': 'hijack', '7600': 'radio failure', '7700': 'emergency'};
+const dismissed = new Set(), esc = v => String(v ?? '').replace(/[&<>"]/g, c => ({'&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;'}[c]));
+function checkAlerts() {
+  const box = document.getElementById('alert'), rows = [];
+  for (const [hex, p] of planes) {
+    const d = p.d, why = EMG[d.squawk] || (d.emergency && d.emergency !== 'none' ? String(d.emergency).replace(/[^a-z_]/gi, '') : '');
+    if (why && !dismissed.has(hex + d.squawk)) rows.push(`<div class="a" data-hex="${hex}"><b>●</b>${esc(d.flight || hex)} · SQUAWK ${esc(d.squawk || '-')} · ${esc(why)}<i data-x="${hex + d.squawk}" title="dismiss">✕</i></div>`);
+  }
+  box.innerHTML = rows.slice(0, 4).join('');
+  box.style.display = rows.length ? 'flex' : 'none';
+}
+document.getElementById('alert').addEventListener('click', e => {
+  const x = e.target.closest('[data-x]');
+  if (x) { dismissed.add(x.dataset.x); return checkAlerts(); }
+  const a = e.target.closest('[data-hex]');
+  if (a) { const p = planes.get(a.dataset.hex); if (p) { exitReplay(); focus([p.lat ?? p.d.lat, p.lon ?? p.d.lon], 8); select(a.dataset.hex); } }
+});
+
+// ---- shareable URL: ?ll=lat,lon,zoom&sel=hex is kept in sync (replaceState, no history spam)
+const urlq = new URLSearchParams(location.search);
+{
+  const ll = (urlq.get('ll') || '').split(',').map(Number);
+  if (ll.length === 3 && ll.every(Number.isFinite) && Math.abs(ll[0]) <= 90 && Math.abs(ll[1]) <= 180) map.setView([ll[0], ll[1]], Math.min(Math.max(ll[2], 3), 16), {animate: false});
+}
+let wantSel = /^~?[0-9a-f]{6}$/.test(urlq.get('sel') || '') ? urlq.get('sel') : null;
+function syncUrl() {
+  const q = new URLSearchParams(location.search), c = map.getCenter();
+  q.set('ll', `${c.lat.toFixed(4)},${c.lng.toFixed(4)},${map.getZoom()}`);
+  if (selected) q.set('sel', selected); else q.delete('sel');
+  history.replaceState(null, '', location.pathname + '?' + q.toString().replace(/%2C/g, ','));
+}
+map.on('moveend', syncUrl);
+
+// ---- keyboard shortcuts (ignored while typing)
+addEventListener('keydown', e => {
+  if (e.target.closest('input, textarea, select') || e.metaKey || e.ctrlKey || e.altKey) return;
+  const k = e.key, help = document.getElementById('keys');
+  if (k === '/') { e.preventDefault(); document.getElementById('q').focus(); }
+  else if (k === 'Escape') { help.style.display = 'none'; if (replay) exitReplay(); else if (document.getElementById('apt').style.display === 'block') FT.closeAirport(); else select(null); }
+  else if (k === 't' || k === 'T') { const c = document.getElementById('trails'); c.checked = !c.checked; dirty = true; }
+  else if ((k === 'f' || k === 'F') && document.getElementById('follow')) { const c = document.getElementById('follow'); c.checked = !c.checked; }
+  else if (k === 'r' || k === 'R') replay ? exitReplay() : enterReplay();
+  else if (k === ' ' && replay) { e.preventDefault(); togglePlay(); }
+  else if (k === '?') help.style.display = help.style.display === 'block' ? 'none' : 'block';
+});
+
+// ---- replay: this device records a compact snapshot of every poll (IndexedDB, last 3 h) and can scrub back through it
+const KEEP = 3 * 3600, SPEEDS = [10, 30, 60, 120];
+let snaps = [], db = null;
+const idb = new Promise(res => {
+  try {
+    const r = indexedDB.open('br-replay', 1);
+    r.onupgradeneeded = () => r.result.createObjectStore('snaps', {keyPath: 't'});
+    r.onsuccess = () => res(r.result); r.onerror = () => res(null);
+  } catch (e) { res(null); }
+});
+idb.then(d => {
+  db = d; if (!db) return;
+  const tx = db.transaction('snaps', 'readwrite'), st = tx.objectStore('snaps'), cut = Date.now() / 1000 - KEEP;
+  st.delete(IDBKeyRange.upperBound(cut));
+  st.getAll(IDBKeyRange.lowerBound(cut)).onsuccess = e => { snaps = e.target.result.concat(snaps).sort((a, b) => a.t - b.t); };
+});
+function record(j) {
+  if (!j || !Array.isArray(j.ac)) return;
+  const t = Math.round(j.now), r5 = x => Math.round(x * 1e4) / 1e4;
+  if (snaps.length && t - snaps[snaps.length - 1].t < 10) return;
+  // [hex, callsign, lat, lon, alt, track, gs, ground, type, category]
+  const s = {t, ac: j.ac.filter(d => Number.isFinite(d.lat)).map(d => [d.hex, d.flight || '', r5(d.lat), r5(d.lon), d.alt ?? null, d.track ?? 0, d.gs ?? 0, d.ground ? 1 : 0, d.type || '', d.category || ''])};
+  snaps.push(s);
+  while (snaps.length && snaps[0].t < t - KEEP) snaps.shift();
+  if (db) try { const st = db.transaction('snaps', 'readwrite').objectStore('snaps'); st.put(s); st.delete(IDBKeyRange.upperBound(t - KEEP)); } catch (e) {}
+}
+const lerp = (a, b, f) => a + (b - a) * f;
+const lerpDeg = (a, b, f) => a + ((((b - a) % 360) + 540) % 360 - 180) * f;
+function frameAt(t) {   // planes at time t: interpolate between the two snapshots around t (no jump over gaps > 2 min)
+  let i = snaps.findIndex(s => s.t > t); if (i < 0) i = snaps.length;
+  const A = snaps[i - 1], B = snaps[i], out = new Map();
+  if (!A) return out;
+  const bm = B && B.t - A.t < 120 ? new Map(B.ac.map(a => [a[0], a])) : null, f = bm ? (t - A.t) / (B.t - A.t) : 0;
+  for (const a of A.ac) {
+    const b = bm && bm.get(a[0]), g = b ? f : 0, q = b || a;
+    const d = {hex: a[0], flight: a[1], lat: lerp(a[2], q[2], g), lon: lerp(a[3], q[3], g), alt: a[4] == null ? null : lerp(a[4], q[4] ?? a[4], g),
+      track: lerpDeg(a[5], q[5], g), gs: a[6], ground: !!a[7], type: a[8], category: a[9], ts: t};
+    const pts = [];
+    for (let k = Math.max(0, i - 20); k < i; k++) { const r = snaps[k].ac.find(x => x[0] === a[0]); if (r) pts.push([r[2], r[3], r[7] ? null : r[4]]); }
+    out.set(a[0], {d, pts, col: altColor(d.alt, d.ground)});
+  }
+  return out;
+}
+function drawLabels(m) {
+  ctx.font = '500 11px "JetBrains Mono",monospace'; ctx.lineWidth = 3; ctx.strokeStyle = '#020406'; ctx.fillStyle = '#c4e7ff';
+  for (const p of m.values()) if (p.vis && p.d.flight) { ctx.strokeText(p.d.flight, p.x + 12, p.y + 4); ctx.fillText(p.d.flight, p.x + 12, p.y + 4); }
+}
+const rp = document.getElementById('rp'), rpPos = document.getElementById('rpPos');
+const fmtT = t => new Date(t * 1000).toLocaleTimeString('en-IN', {timeZone: 'Asia/Kolkata', hour12: false});
+function rpRange() { return [snaps[0].t, snaps[snaps.length - 1].t]; }
+function setReplayT(t) {
+  const [a, b] = rpRange(); replay.t = Math.min(Math.max(t, a), b);
+  view = frameAt(replay.t); dirty = true;
+  rpPos.value = Math.round((replay.t - a) / Math.max(b - a, 1) * 1000);
+  document.getElementById('rpT').textContent = fmtT(replay.t) + ' IST';
+}
+function enterReplay() {
+  if (snaps.length < 2) { const b = document.getElementById('bReplay'); b.textContent = 'Replay: recording…'; setTimeout(() => b.textContent = 'Replay', 2000); return; }
+  select(null); replay = {t: 0, playing: false, speed: 30};
+  rp.style.display = 'flex'; document.getElementById('legend').style.display = 'none';
+  const [a, b] = rpRange(); setReplayT(Math.max(a, b - 1800));   // start 30 min back
+  togglePlay();
+}
+function exitReplay() {
+  if (!replay) return;
+  replay = null; view = planes; rp.style.display = 'none'; document.getElementById('legend').style.display = ''; dirty = true;
+}
+function togglePlay() { replay.playing = !replay.playing; document.getElementById('rpPlay').textContent = replay.playing ? '❚❚' : '▶'; }
+let rpLast = 0;
+(function tick(ts) {
+  requestAnimationFrame(tick);
+  if (replay && replay.playing) {
+    const dt = rpLast ? Math.min((ts - rpLast) / 1000, .25) : 0;
+    setReplayT(replay.t + dt * replay.speed);
+    if (replay.t >= rpRange()[1]) togglePlay();
+  }
+  rpLast = ts;
+})(0);
+document.getElementById('bReplay').onclick = () => replay ? exitReplay() : enterReplay();
+document.getElementById('rpPlay').onclick = togglePlay;
+document.getElementById('rpLive').onclick = exitReplay;
+document.getElementById('rpSpd').onclick = e => { replay.speed = SPEEDS[(SPEEDS.indexOf(replay.speed) + 1) % SPEEDS.length]; e.target.textContent = '×' + replay.speed; };
+rpPos.oninput = () => { const [a, b] = rpRange(); setReplayT(a + (b - a) * rpPos.value / 1000); };
 window.__first.then(j => poll(j));   // data was requested before Leaflet even loaded
 setInterval(poll, POLL);
 document.addEventListener('visibilitychange', () => { if (!document.hidden) poll(); });
