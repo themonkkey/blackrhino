@@ -227,7 +227,9 @@ body.v3d.has-flight #scope,body.v3d.has-flight #ctrl,body.v3d.has-flight #src{di
 .lbl{font:500 11px var(--font);color:#e8edf6;text-shadow:0 1px 3px #000,0 0 8px rgba(0,0,0,.8);white-space:nowrap;transform:translate(8px,-50%)}
 .lbl.apt{color:var(--ink-2);font:600 10.5px var(--mono);letter-spacing:.04em}
 .lbl.apt::before{content:"";position:absolute;left:-9px;top:50%;width:5px;height:5px;margin-top:-2.5px;border-radius:50%;background:var(--ink);box-shadow:0 0 0 2px rgba(0,0,0,.5)}
-.lbl.sel{font:500 13px var(--disp);color:var(--sky-2);background:var(--panel);padding:4px 10px;border-radius:999px;border:1px solid var(--edge-2);transform:translate(-50%,-180%)}
+.lbl.sel{font:500 13px var(--disp);color:var(--sky-2);background:var(--panel);padding:4px 10px;border-radius:999px;border:1px solid var(--edge-2);
+  transform:translate(-50%,calc(-100% - var(--off,26px)))}
+.lbl.sel::after{content:"";position:absolute;left:50%;top:100%;width:1px;height:calc(var(--off,26px) - 6px);background:linear-gradient(var(--edge-2),transparent)}
 
 /* ---------- mid widths: tools collapse to icons, search narrows ---------- */
 @media (max-width:1180px) and (min-width:701px){
