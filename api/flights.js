@@ -49,7 +49,7 @@ export default async function handler(req, res) {
     }
   } catch {}
   const ac = [...merged.values()].filter(f => f.lat > 3 && f.lat < 39 && f.lon > 64 && f.lon < 101);
-  res.setHeader('Cache-Control', 'public, s-maxage=15, stale-while-revalidate=300');
+  res.setHeader('Cache-Control', 'public, s-maxage=15, stale-while-revalidate=3600');   // after a quiet spell the first visitor gets the last snapshot instantly, not a 13 s rebuild
   res.status(200).json({now: Date.now() / 1000, ac, apts: {}, meta: {
     adsbfi: `${status.fi}/${TILES.length} areas` + (status.fiErr ? ` (${status.fiErr} failed)` : ''),
     adsblol: status.lol || status.lolErr ? `${status.lol} ok${status.lolErr ? `, ${status.lolErr} failed` : ''}` : 'not needed',

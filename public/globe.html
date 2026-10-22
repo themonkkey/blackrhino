@@ -11,7 +11,13 @@
 <link rel="manifest" href="manifest.webmanifest">
 <link rel="icon" type="image/png" href="icons/favicon-32.png">
 <link rel="apple-touch-icon" href="icons/apple-touch-icon.png">
-<title>BlackRhino · 3D</title>
+<title>blackrhino · live globe</title>
+<meta name="description" content="Live flights over India on a 3D globe with day and night lighting.">
+<meta property="og:type" content="website"><meta property="og:site_name" content="blackrhino">
+<meta property="og:title" content="blackrhino · live globe"><meta property="og:description" content="Live flights over India on a 3D globe with day and night lighting.">
+<meta property="og:image" content="https://blackrhino.in/og.jpg"><meta property="og:image:width" content="1200"><meta property="og:image:height" content="630">
+<meta name="twitter:card" content="summary_large_image"><meta name="twitter:image" content="https://blackrhino.in/og.jpg">
+<link rel="canonical" href="https://blackrhino.in/globe">
 <script>window.__first = fetch('/api/flights').then(r => r.json()).catch(() => null);
 if ('serviceWorker' in navigator) navigator.serviceWorker.register('sw.js');</script>
 <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/cesium@1.121.0/Build/Cesium/Widgets/widgets.css" integrity="sha256-cCxa3z0W7H8cA8xft+y4I69sWfoZJ4n7LIWax6EfSgw=" crossorigin="anonymous">
@@ -44,7 +50,7 @@ body.tracking.has-flight #watchBar{display:none}
 <div id="cesium"></div>
 <div id="top" class="hud">
   <a class="brand" href="/" title="blackrhino home"><svg viewBox="0 0 64 64"><path d="M5 31C5 23 11 18 20 18L32 18C35 18 37.5 18.8 39.5 20.5L40 15.8C40.3 14 42.6 13.8 43 15.6L43.6 21.6C46.5 23.5 48.5 26.5 50 29.5L51.3 26.4L53.2 31C55.5 27.5 58.2 22.5 61.5 19C61 25.5 59.5 31.5 57.5 35.5C59.2 37.5 59.7 40.5 58.8 43.2C56.3 45.7 51.2 45.8 47.6 44.2L44.6 45.4L44 54L37.4 54L37 48L21 48L20.5 54L13.8 54L13.2 46.2C8 43.8 5 38.2 5 31Z"/></svg>blackrhino<span class="br-dot"></span></a>
-  <span class="live"><span class="dot"></span><b id="nAll">0</b> live</span>
+  <span class="live"><span class="dot"></span><b id="nAll">…</b> live</span>
   <input type="search" id="q" placeholder="Flight, registration or airport" autocomplete="off" enterkeyhint="search" aria-label="Search">
 </div>
 <nav id="tools" class="hud" aria-label="Tools">

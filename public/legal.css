@@ -25,3 +25,9 @@ td:first-child{color:var(--ink);white-space:nowrap}
 code{font:400 13px var(--mono);color:var(--ink)}
 footer{margin-top:90px;border-top:1px solid var(--line);padding:26px 0 40px;color:var(--mute);font-size:13px}
 footer .wrap{display:flex;justify-content:space-between;gap:18px;flex-wrap:wrap;max-width:960px}footer a{color:var(--ink-2)}
+@media (max-width:520px){
+  header .wrap{flex-wrap:wrap;gap:12px}
+  header nav{gap:14px;flex-wrap:wrap;font-size:13px}
+  td:first-child{white-space:normal}
+  table{font-size:13.5px;display:block;overflow-x:auto}
+}

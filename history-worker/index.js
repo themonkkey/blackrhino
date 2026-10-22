@@ -103,7 +103,7 @@ async function tidy(env) {
 }
 
 const base = {'Content-Type': 'application/json', 'X-Content-Type-Options': 'nosniff'};
-const cors = {...base, 'Access-Control-Allow-Origin': '*', 'Cache-Control': 'public, max-age=60'};
+const cors = {...base, 'Access-Control-Allow-Origin': '*', 'Cache-Control': 'public, max-age=60, s-maxage=120'};   // s-maxage: cached by Vercel's CDN via /hist
 const json = (o, s = 200, h = cors) => new Response(JSON.stringify(o), {status: s, headers: h});
 const parseTrack = t => (t || '').split(';').filter(Boolean).map(p => p.split(',').map(Number));
 // short edge cache for public GETs, keyed on the validated params only (random params can't bust it).
@@ -112,7 +112,7 @@ async function cached(ctx, key, ttl, make) {
   const k = new Request('https://cache.flight-history/' + key), hit = await caches.default.match(k).catch(() => null);
   if (hit) return hit;
   const res = await make();
-  if (res.status === 200) { res.headers.set('Cache-Control', `public, max-age=${ttl}`); ctx.waitUntil(caches.default.put(k, res.clone()).catch(() => {})); }
+  if (res.status === 200) { res.headers.set('Cache-Control', `public, max-age=${ttl}, s-maxage=${ttl * 2}`); ctx.waitUntil(caches.default.put(k, res.clone()).catch(() => {})); }
   return res;
 }
 

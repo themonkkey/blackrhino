@@ -8,5 +8,7 @@
   "license": "MIT",
   "scripts": {
     "check": "for f in api/*.js history-worker/index.js public/*.js; do node --check \"$f\" || exit 1; done"
-  }
+  },
+  "version": "1.0.0",
+  "description": "Open-source live flight tracker for India: 2D radar, 3D India with real airports, airport boards, history and live GPS sharing."
 }

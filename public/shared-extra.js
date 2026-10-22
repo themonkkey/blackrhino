@@ -9,6 +9,7 @@ const load = (k, def) => { try { const v = JSON.parse(localStorage.getItem(k)); 
 const save = (k, v) => { try { localStorage.setItem(k, JSON.stringify(v)); } catch (e) {} };
 const IST = {timeZone: 'Asia/Kolkata', hour: '2-digit', minute: '2-digit', hour12: false};
 FT.HISTORY_API = (window.BR_CONFIG || {}).historyApi || '';
+FT.HISTORY_READ = (window.BR_CONFIG || {}).historyRead || FT.HISTORY_API;
 
 // ---------- airlines (ICAO callsign prefix) ----------
 const AIRLINES = {IGO: 'IndiGo', AIC: 'Air India', AXB: 'Air India Express', AKJ: 'Akasa Air', SEJ: 'SpiceJet', LLR: 'Alliance Air',
@@ -237,8 +238,8 @@ setInterval(() => { if (!document.hidden) FT.renderList(); }, 3000);
 
 // ---------- history (recorded by the flight-history worker every 10 min) ----------
 FT.history = {
-  flight: (cs, days = 7) => fetch(`${FT.HISTORY_API}/flight?cs=${encodeURIComponent(cs)}&days=${days}`).then(r => r.json()),
-  airport: (icao, day) => fetch(`${FT.HISTORY_API}/airport?icao=${icao}&day=${day}`).then(r => r.json()),
+  flight: (cs, days = 7) => fetch(`${FT.HISTORY_READ}/flight?cs=${encodeURIComponent(cs)}&days=${days}`).then(r => r.json()),
+  airport: (icao, day) => fetch(`${FT.HISTORY_READ}/airport?icao=${icao}&day=${day}`).then(r => r.json()),
 };
 const histHTML = {}, histData = {};
 async function showFlightHistory(cs) {

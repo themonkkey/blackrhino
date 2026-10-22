@@ -1,0 +1,25 @@
+# Uptime check every 30 min. GitHub emails the repo owner when a scheduled run fails.
+# Forks: set repository variables APP_URL and HISTORY_URL (Settings -> Secrets and variables -> Actions -> Variables).
+name: health
+on:
+  schedule: [{cron: '7,37 * * * *'}]
+  workflow_dispatch:
+permissions:
+  contents: read
+jobs:
+  health:
+    runs-on: ubuntu-latest
+    env:
+      APP_URL: ${{ vars.APP_URL || 'https://flight-tracker-india.vercel.app' }}
+      HISTORY_URL: ${{ vars.HISTORY_URL || 'https://flight-history.duospace-api.workers.dev' }}
+    steps:
+      - name: Live feed has aircraft
+        run: |
+          n=$(curl -fsS --max-time 40 "$APP_URL/api/flights" | python3 -c "import json,sys;print(len(json.load(sys.stdin)['ac']))")
+          echo "aircraft: $n"; [ "$n" -gt 50 ]
+      - name: History recorder ran in the last 30 min
+        run: |
+          age=$(curl -fsS --max-time 20 -A "Mozilla/5.0 health-check" "$HISTORY_URL/status" | python3 -c "import json,sys,time;print(int(time.time())-int(json.load(sys.stdin)['last_run'].split('|')[0]))")
+          echo "last run ${age}s ago"; [ "$age" -lt 1800 ]
+      - name: Pages respond
+        run: for p in / /map /3d /apt3d/index.json; do curl -fsS -o /dev/null --max-time 20 "$APP_URL$p" || { echo "FAIL $p"; exit 1; }; done

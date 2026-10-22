@@ -1,0 +1,20 @@
+name: check
+on: [push, pull_request]
+permissions:
+  contents: read
+jobs:
+  check:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with: {node-version: 22}
+      - run: npm run check
+      - name: JSON files parse
+        run: for f in public/*.json public/apt3d/*.json vercel.json package.json; do node -e "JSON.parse(require('fs').readFileSync('$f','utf8'))" || exit 1; done
+      - name: Module syntax (3D pages)
+        run: |
+          for f in public/3d.html public/globe.html; do
+            node -e "const s=require('fs').readFileSync('$f','utf8');const m=s.match(/<script type=\"module\">([\s\S]*?)<\/script>/);require('fs').writeFileSync('/tmp/m.mjs',m?m[1]:'')"
+            node --check /tmp/m.mjs || exit 1
+          done

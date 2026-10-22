@@ -59,5 +59,11 @@
         }
       ]
     }
+  ],
+  "rewrites": [
+    {
+      "source": "/hist/:path(flight|airport|status)",
+      "destination": "https://flight-history.duospace-api.workers.dev/:path"
+    }
   ]
 }
