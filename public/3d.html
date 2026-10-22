@@ -168,8 +168,8 @@ function loadImg(url) {
   return new Promise(res => { const im = new Image(); im.crossOrigin = 'anonymous';
     im.onload = () => { loaded++; progress(); res(im); }; im.onerror = () => { loaded++; progress(); res(null); }; im.src = url; });
 }
-async function mosaic(z, urlFn) {   // stitch tiles covering BB into one canvas
-  const x0 = Math.floor(mx(BB.w, z) / 256), x1 = Math.floor(mx(BB.e, z) / 256), y0 = Math.floor(my(BB.n, z) / 256), y1 = Math.floor(my(BB.s, z) / 256);
+async function mosaic(z, urlFn, bb = BB) {   // stitch tiles covering bb into one canvas
+  const x0 = Math.floor(mx(bb.w, z) / 256), x1 = Math.floor(mx(bb.e, z) / 256), y0 = Math.floor(my(bb.n, z) / 256), y1 = Math.floor(my(bb.s, z) / 256);
   const cv = document.createElement('canvas'); cv.width = (x1 - x0 + 1) * 256; cv.height = (y1 - y0 + 1) * 256;
   const ctx = cv.getContext('2d', {willReadFrequently: true});
   const jobs = [];
@@ -178,24 +178,27 @@ async function mosaic(z, urlFn) {   // stitch tiles covering BB into one canvas
   return {cv, ctx, z, px0: x0 * 256, py0: y0 * 256};
 }
 let H = null;   // height lookup (metres)
-function heightAt(lat, lon) {
-  if (!H) return 0;
+let D = null;   // detail patch (sharper imagery + terrain around the camera), see buildDetail()
+function sampleH(H, lat, lon) {
   const fx = mx(lon, H.z) - H.px0, fy = my(lat, H.z) - H.py0;
   const x = Math.max(0, Math.min(H.w - 2, fx)), y = Math.max(0, Math.min(H.h - 2, fy));
   const ix = x | 0, iy = y | 0, tx = x - ix, ty = y - iy;
   const v = (i, j) => H.data[j * H.w + i];
   return (v(ix, iy) * (1 - tx) + v(ix + 1, iy) * tx) * (1 - ty) + (v(ix, iy + 1) * (1 - tx) + v(ix + 1, iy + 1) * tx) * ty;
 }
+const inBox = (b, lat, lon) => b && lat > b.s && lat < b.n && lon > b.w && lon < b.e;
+const heightAt = (lat, lon) => !H ? 0 : D && inBox(D.bb, lat, lon) ? D.hAt(lat, lon) : sampleH(H, lat, lon);
+const demGrid = (dem) => { const id = dem.ctx.getImageData(0, 0, dem.cv.width, dem.cv.height).data, data = new Float32Array(dem.cv.width * dem.cv.height);
+  for (let i = 0; i < data.length; i++) data[i] = id[i * 4] * 256 + id[i * 4 + 1] + id[i * 4 + 2] / 256 - 32768;
+  return {data, w: dem.cv.width, h: dem.cv.height, z: dem.z, px0: dem.px0, py0: dem.py0}; };
+const DEM_URL = (z, x, y) => `https://s3.amazonaws.com/elevation-tiles-prod/terrarium/${z}/${x}/${y}.png`;
+const IMG_URL = (z, x, y) => `https://server.arcgisonline.com/ArcGIS/rest/services/World_Imagery/MapServer/tile/${z}/${y}/${x}`;
 const groundY = (lat, lon) => Math.max(heightAt(lat, lon), 0) / 1000 * VE;
 let terrain = null, ocean = null;
 async function buildTerrain() {
   const [dem, img] = await Promise.all([
-    mosaic(6, (z, x, y) => `https://s3.amazonaws.com/elevation-tiles-prod/terrarium/${z}/${x}/${y}.png`),
-    mosaic(MOBILE ? 6 : 7, (z, x, y) => `https://server.arcgisonline.com/ArcGIS/rest/services/World_Imagery/MapServer/tile/${z}/${y}/${x}`)]);
-  const id = dem.ctx.getImageData(0, 0, dem.cv.width, dem.cv.height).data;
-  const data = new Float32Array(dem.cv.width * dem.cv.height);
-  for (let i = 0; i < data.length; i++) data[i] = id[i * 4] * 256 + id[i * 4 + 1] + id[i * 4 + 2] / 256 - 32768;
-  H = {data, w: dem.cv.width, h: dem.cv.height, z: dem.z, px0: dem.px0, py0: dem.py0};
+    mosaic(6, DEM_URL), mosaic(MOBILE ? 6 : 7, IMG_URL)]);
+  H = demGrid(dem);
   const tex = new THREE.CanvasTexture(img.cv);
   tex.colorSpace = THREE.SRGBColorSpace; tex.anisotropy = renderer.capabilities.getMaxAnisotropy(); tex.generateMipmaps = true;
   const SX = MOBILE ? 300 : 560, SY = SX;
@@ -211,7 +214,7 @@ async function buildTerrain() {
   for (let j = 0; j < SY; j++) for (let i = 0; i < SX; i++) { const a = j * (SX + 1) + i, b = a + 1, c = a + SX + 1, d = c + 1; idx.push(a, c, b, b, c, d); }
   geo.setAttribute('position', new THREE.BufferAttribute(pos, 3)); geo.setAttribute('uv', new THREE.BufferAttribute(uv, 2));
   geo.setIndex(idx); geo.computeVertexNormals();
-  terrain = new THREE.Mesh(geo, new THREE.MeshStandardMaterial({map: tex, roughness: 0.96, metalness: 0}));
+  terrain = new THREE.Mesh(geo, holeMat(new THREE.MeshStandardMaterial({map: tex, roughness: 0.96, metalness: 0})));
   scene.add(terrain);
   // glossy sea surface for sun glint + a dark apron so the map edge disappears into haze
   ocean = new THREE.Mesh(new THREE.PlaneGeometry(20000, 20000), new THREE.MeshStandardMaterial({color: 0x0c2f4f, roughness: 0.28, metalness: 0.2, transparent: true, opacity: 0.38}));
@@ -225,6 +228,70 @@ function rescaleTerrain(prevVE) {
   for (let i = 0; i < p.count; i++) p.setY(i, p.getY(i) / prevVE * VE);
   p.needsUpdate = true; terrain.geometry.computeVertexNormals();
   ocean.position.y = 0.004 * VE;
+  if (D) { const q = D.mesh.geometry.attributes.position; for (let i = 0; i < q.count; i++) q.setY(i, q.getY(i) / prevVE * VE); q.needsUpdate = true; D.mesh.geometry.computeVertexNormals(); }
+}
+
+// ================= detail patch: sharper imagery + terrain under the camera, level picked by camera distance =================
+const HOLE = {value: new THREE.Vector4(1e9, 1e9, -1e9, -1e9)};   // world x0,z0,x1,z1 where the base terrain steps aside
+function holeMat(m) {
+  m.onBeforeCompile = sh => {
+    sh.uniforms.uHole = HOLE;
+    sh.vertexShader = 'varying vec2 vWxz;\n' + sh.vertexShader.replace('#include <project_vertex>', '#include <project_vertex>\nvWxz = (modelMatrix * vec4(transformed, 1.0)).xz;');
+    sh.fragmentShader = 'uniform vec4 uHole;\nvarying vec2 vWxz;\n' + sh.fragmentShader.replace('void main() {',
+      'void main() {\n  if (vWxz.x > uHole.x && vWxz.x < uHole.z && vWxz.y > uHole.y && vWxz.y < uHole.w) discard;');
+  };
+  return m;
+}
+// camera distance (km) -> imagery zoom; each patch is ~9 tiles across, terrain two zooms coarser
+const LEVELS = MOBILE ? [[25, 12], [70, 11], [170, 10], [420, 9]] : [[10, 13], [28, 12], [70, 11], [170, 10], [420, 9]];
+let detailBusy = false, detailCheck = 0;
+function wantedDetail() {
+  // what the eye can resolve depends on how far the ground is, not the orbit radius: following a plane at FL360 the ground is ~66 km away
+  const t = controls.target, tLat = LAT0 - t.z / KY, tLon = LON0 + t.x / KX;
+  const dist = Math.max(camera.position.distanceTo(t), camera.position.y - groundY(tLat, tLon)), lv = LEVELS.find(l => dist < l[0]);
+  if (!lv) return null;
+  const z = lv[1], span = 9 * 360 / 2 ** z;
+  const lat = clamp(LAT0 - t.z / KY, BB.s + span / 2, BB.n - span / 2), lon = clamp(LON0 + t.x / KX, BB.w + span / 2, BB.e - span / 2);
+  return {z, span, lat, lon};
+}
+async function buildDetail(w) {
+  detailBusy = true;
+  const half = w.span / 2, bb = {w: w.lon - half, e: w.lon + half, s: w.lat - half * 0.92, n: w.lat + half * 0.92};
+  try {
+    const [dem, img] = await Promise.all([mosaic(clamp(w.z - 2, 6, 12), DEM_URL, bb), mosaic(w.z, IMG_URL, bb)]);
+    const G = demGrid(dem), N = MOBILE ? 128 : 192, iw = img.cv.width, ih = img.cv.height;
+    const pos = new Float32Array((N + 1) ** 2 * 3), uv = new Float32Array((N + 1) ** 2 * 2), idx = new Uint32Array(N * N * 6);
+    for (let j = 0; j <= N; j++) for (let i = 0; i <= N; i++) {
+      const lon = bb.w + (bb.e - bb.w) * i / N, lat = bb.n - (bb.n - bb.s) * j / N, k = j * (N + 1) + i;
+      // edges ease onto the base terrain so the patch meets it without a step
+      const edge = Math.min(i, j, N - i, N - j) / (N * 0.08), f = THREE.MathUtils.smoothstep(Math.min(edge, 1), 0, 1);
+      const h = sampleH(G, lat, lon) * f + sampleH(H, lat, lon) * (1 - f), [x, z] = xz(lat, lon);
+      pos[k * 3] = x; pos[k * 3 + 1] = (h > 0 ? h : h * 0.02) / 1000 * VE; pos[k * 3 + 2] = z;
+      uv[k * 2] = (mx(lon, img.z) - img.px0) / iw; uv[k * 2 + 1] = 1 - (my(lat, img.z) - img.py0) / ih;
+    }
+    let q = 0;
+    for (let j = 0; j < N; j++) for (let i = 0; i < N; i++) { const a = j * (N + 1) + i, b = a + 1, c = a + N + 1, d = c + 1; idx.set([a, c, b, b, c, d], q); q += 6; }
+    const geo = new THREE.BufferGeometry();
+    geo.setAttribute('position', new THREE.BufferAttribute(pos, 3)); geo.setAttribute('uv', new THREE.BufferAttribute(uv, 2));
+    geo.setIndex(new THREE.BufferAttribute(idx, 1)); geo.computeVertexNormals();
+    const tex = new THREE.CanvasTexture(img.cv); tex.colorSpace = THREE.SRGBColorSpace; tex.anisotropy = renderer.capabilities.getMaxAnisotropy();
+    const mesh = new THREE.Mesh(geo, new THREE.MeshStandardMaterial({map: tex, roughness: 0.94, metalness: 0}));
+    scene.add(mesh);
+    if (D) { scene.remove(D.mesh); D.mesh.geometry.dispose(); D.mesh.material.map.dispose(); D.mesh.material.dispose(); }
+    D = {mesh, bb, z: w.z, lat: w.lat, lon: w.lon, span: w.span, hAt: (la, lo) => sampleH(G, la, lo)};
+    const [x0, z0] = xz(bb.n, bb.w), [x1, z1] = xz(bb.s, bb.e), e = 0.02;
+    HOLE.value.set(x0 + e, z0 + e, x1 - e, z1 - e);
+    aptLabels.forEach(o => o.position.y = groundY(o.userData.a.lat, o.userData.a.lon) + 0.05);
+  } catch (err) {}
+  detailBusy = false;
+}
+function updateDetail(t) {
+  if (detailBusy || flyT || t - detailCheck < 700 || !H) return;
+  detailCheck = t;
+  const w = wantedDetail();
+  if (!w) { if (D) { scene.remove(D.mesh); D.mesh.geometry.dispose(); D.mesh.material.map.dispose(); D.mesh.material.dispose(); D = null; HOLE.value.set(1e9, 1e9, -1e9, -1e9); } return; }
+  if (D && D.z === w.z && Math.abs(D.lat - w.lat) < w.span * 0.22 && Math.abs(D.lon - w.lon) < w.span * 0.22) return;
+  buildDetail(w);
 }
 
 // ================= live satellite clouds (EUMETSAT Meteosat IODC infrared), as a lit cloud deck =================
@@ -260,20 +327,21 @@ setInterval(loadClouds, 9e5);
 // ================= aircraft =================
 const STOPS = [[0, 0x1b6fd1], [10000, 0x2f8de4], [20000, 0x4aa8f0], [30000, 0x7cc8ff], [40000, 0x9fd6ff]];
 const altCol = (alt, ground) => { if (ground || alt == null) return 0x9ca3af; for (let i = STOPS.length - 1; i >= 0; i--) if (alt >= STOPS[i][0]) return STOPS[i][1]; return 0x1b6fd1; };
-let fleet = null, selMesh = null, planeGeo = null, planeMat = null;
-const MAX = 1600;
+let fleet = null, fleetHi = null, selMesh = null, planeGeo = null, planeMat = null;
+const MAX = 1600, MAX_HI = 96, NEAR_KM = 6;   // far planes: 472-triangle model; within NEAR_KM of the camera: the 4000-triangle one
 const planes = new Map(), slots = [];   // hex -> plane; instance slot -> hex
 let selected = null, camMode = 'free', lastFetch = 0, serverOffset = 0;
 const nowS = () => Date.now() / 1000 + serverOffset;
 async function loadModel() {
-  const g = await new GLTFLoader().loadAsync('models/airliner_hq.glb');
-  g.scene.traverse(o => { if (o.isMesh && !planeGeo) { planeGeo = o.geometry; } });
-  planeGeo.scale(0.001, 0.001, 0.001);   // metres -> km
+  const geoOf = g => { let out = null; g.scene.traverse(o => { if (o.isMesh && !out) out = o.geometry; }); out.scale(0.001, 0.001, 0.001); return out; };   // metres -> km
+  const [lo, hi] = await Promise.all(['models/airliner.glb', 'models/airliner_hq.glb'].map(u => new GLTFLoader().loadAsync(u)));
+  const loGeo = geoOf(lo); planeGeo = geoOf(hi);
   planeMat = new THREE.MeshStandardMaterial({vertexColors: true, roughness: 0.38, metalness: 0.25});
-  fleet = new THREE.InstancedMesh(planeGeo, planeMat, MAX);
-  fleet.instanceMatrix.setUsage(THREE.DynamicDrawUsage); fleet.count = 0; fleet.frustumCulled = false;
-  fleet.instanceColor = new THREE.InstancedBufferAttribute(new Float32Array(MAX * 3), 3);
-  scene.add(fleet);
+  const mk = (geo, mat, n) => { const m = new THREE.InstancedMesh(geo, mat, n);
+    m.instanceMatrix.setUsage(THREE.DynamicDrawUsage); m.count = 0; m.frustumCulled = false;
+    m.instanceColor = new THREE.InstancedBufferAttribute(new Float32Array(n * 3), 3); scene.add(m); return m; };
+  fleet = mk(loGeo, new THREE.MeshStandardMaterial({roughness: 0.42, metalness: 0.2}), MAX);
+  fleetHi = mk(planeGeo, planeMat, MAX_HI);
   selMesh = new THREE.Mesh(planeGeo, new THREE.MeshStandardMaterial({vertexColors: true, roughness: 0.3, metalness: 0.35, emissive: 0x111111}));
   selMesh.visible = false; scene.add(selMesh);
 }
@@ -510,10 +578,19 @@ FT.init({
 }).then(addAirportLabels);
 
 // ================= frame loop =================
-let lastF = performance.now(), sunT = 0;
+let lastF = performance.now(), sunT = 0, trailKey = '';
+// adaptive resolution: drop the pixel ratio when frames run long, restore it when there is headroom
+const DPR_MAX = Math.min(devicePixelRatio, MOBILE ? 1.5 : 1.75), DPR_MIN = Math.min(1, DPR_MAX);
+let dpr = DPR_MAX, slowN = 0, fastN = 0;
+function pace(ms) {
+  if (document.hidden || flyT) return;
+  if (ms > 24) { slowN++; fastN = 0; } else if (ms < 14) { fastN++; slowN = 0; } else { slowN = Math.max(0, slowN - 1); }
+  if (slowN > 45 && dpr > DPR_MIN) { dpr = Math.max(DPR_MIN, dpr - 0.25); renderer.setPixelRatio(dpr); slowN = 0; }
+  if (fastN > 240 && dpr < DPR_MAX) { dpr = Math.min(DPR_MAX, dpr + 0.25); renderer.setPixelRatio(dpr); fastN = 0; }
+}
 function frame(t) {
   requestAnimationFrame(frame);
-  const fdt = Math.min((t - lastF) / 1000, 0.25); lastF = t;
+  const fdt = Math.min((t - lastF) / 1000, 0.25); pace(t - lastF); lastF = t;
   if (flyT) {   // smooth camera flights
     const k = Math.min(1, (t - flyT.t0) / flyT.dur), e = k < 0.5 ? 4 * k * k * k : 1 - Math.pow(-2 * k + 2, 3) / 2;
     camera.position.lerpVectors(flyT.fromC, flyT.toC, e); controls.target.lerpVectors(flyT.fromT, flyT.toT, e);
@@ -521,18 +598,20 @@ function frame(t) {
   }
   const now = nowS(), sz = +$('sz').value;
   if (fleet) {
-    let n = 0;
+    let n = 0, nh = 0;
     for (const [hex, p] of planes) {
       place(p, now, fdt);
       if (hex === selected) continue;
-      if (n >= MAX || !FT.onMap(p.d)) continue;
+      if (n + nh >= MAX || !FT.onMap(p.d)) continue;
       // keep aircraft visible at any distance: scale with camera distance (like a minimum pixel size)
       const dist = camera.position.distanceTo(V.set(p.x, p.y, p.z));
-      fleet.setMatrixAt(n, poseMatrix(p, Math.max(1, dist * 0.6) * sz, M));
-      fleet.setColorAt(n, C.setHex(altCol(p.d.alt, p.d.ground)).lerp(WHITE, 0.15));
-      slots[n++] = hex;
+      const near = dist < NEAR_KM && nh < MAX_HI, m = near ? fleetHi : fleet, i = near ? nh++ : n++;
+      m.setMatrixAt(i, poseMatrix(p, Math.max(1, dist * 0.6) * sz, M));
+      m.setColorAt(i, C.setHex(altCol(p.d.alt, p.d.ground)).lerp(WHITE, near ? 0.15 : 0.25));
+      if (!near) slots[i] = hex;
     }
-    fleet.count = n; fleet.instanceMatrix.needsUpdate = true; if (fleet.instanceColor) fleet.instanceColor.needsUpdate = true;
+    fleet.count = n; fleetHi.count = nh;
+    for (const m of [fleet, fleetHi]) { m.instanceMatrix.needsUpdate = true; m.instanceColor.needsUpdate = true; }
     const p = selected && planes.get(selected);
     if (p) {
       const dist = camera.position.distanceTo(V.set(p.x, p.y, p.z));
@@ -540,8 +619,13 @@ function frame(t) {
       selMesh.visible = camMode !== 'cockpit';
       selLabel.position.set(p.x, p.y, p.z); selLabel.visible = camMode !== 'cockpit';
       if ($('trails').checked && p.pts.length) {
-        const v = p.pts.map(q => { const [x, z] = xz(q[0], q[1]); return new THREE.Vector3(x, q[2] ? q[2] * FT2KM * VE : groundY(q[0], q[1]) + 0.01, z); });
-        v.push(new THREE.Vector3(p.x, p.y, p.z)); trailGeo.setFromPoints(v); trail.visible = true;
+        // rebuild only when a fix arrives; otherwise just move the last vertex with the plane (no per-frame garbage)
+        if (trailKey !== selected + p.pts.length + VE) {
+          trailKey = selected + p.pts.length + VE;
+          const v = p.pts.map(q => { const [x, z] = xz(q[0], q[1]); return new THREE.Vector3(x, q[2] ? q[2] * FT2KM * VE : groundY(q[0], q[1]) + 0.01, z); });
+          v.push(new THREE.Vector3(p.x, p.y, p.z)); trailGeo.setFromPoints(v);
+        } else { const a = trailGeo.attributes.position, i = a.count - 1; a.setXYZ(i, p.x, p.y, p.z); a.needsUpdate = true; }
+        trail.visible = true;
       }
       // camera follows the aircraft: keep the user's orbit offset, move with the plane
       if (!flyT && camMode !== 'free') {
@@ -568,6 +652,7 @@ function frame(t) {
   const camH = camera.position.y;
   for (const o of aptLabels) o.visible = $('labels').checked && camera.position.distanceTo(o.position) < (camH > 600 ? 2600 : 900);
   if (t - sunT > 2000) { sunT = t; updateSun(); }
+  updateDetail(t);
   if (camMode !== 'cockpit') controls.update();
   renderer.render(scene, camera);
   labelR.render(scene, camera);
