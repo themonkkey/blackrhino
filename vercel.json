@@ -65,5 +65,18 @@
       "source": "/hist/:path(flight|airport|status)",
       "destination": "https://flight-history.duospace-api.workers.dev/:path"
     }
+  ],
+  "redirects": [
+    {
+      "source": "/:path*",
+      "has": [
+        {
+          "type": "host",
+          "value": "www.blackrhino.in"
+        }
+      ],
+      "destination": "https://blackrhino.in/:path*",
+      "permanent": true
+    }
   ]
 }

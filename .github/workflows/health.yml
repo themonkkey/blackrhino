@@ -10,7 +10,7 @@ jobs:
   health:
     runs-on: ubuntu-latest
     env:
-      APP_URL: ${{ vars.APP_URL || 'https://flight-tracker-india.vercel.app' }}
+      APP_URL: ${{ vars.APP_URL || 'https://blackrhino.in' }}
       HISTORY_URL: ${{ vars.HISTORY_URL || 'https://flight-history.duospace-api.workers.dev' }}
     steps:
       - name: Live feed has aircraft
