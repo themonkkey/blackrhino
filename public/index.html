@@ -309,7 +309,7 @@ footer{padding:80px 0 34px;overflow:hidden}
 <header class="nav" id="nav">
   <a class="wordmark" href="/" aria-label="BlackRhino home"><svg><use href="#rhino"/></svg>blackrhino<span class="dot"></span></a>
   <div class="status"><span class="live"><i></i><b id="nAir">···</b> airborne</span><span>VIDP · VABB · VOBL</span><span><b id="clock">--:--:--</b> IST</span></div>
-  <div class="r"><a class="l" href="#scope-sec">Scope</a><a class="l" href="#livery">Livery</a><a class="l" href="#share">Share</a><a class="pill sky sm" href="/map">Open radar <svg><use href="#arr"/></svg></a></div>
+  <div class="r"><a class="l" href="#scope-sec">Scope</a><a class="l" href="#livery">Livery</a><a class="pill sky sm" href="/map">Open radar <svg><use href="#arr"/></svg></a></div>
 </header>
 
 <!-- 01 · HERO -->
@@ -427,27 +427,6 @@ footer{padding:80px 0 34px;overflow:hidden}
   </div>
 </section>
 
-<!-- 07 · SHARE (night) -->
-<section class="film share" id="share">
-  <img class="poster" src="video/night.jpg" alt="" loading="lazy">
-  <video data-v="night" muted loop playsinline preload="none" poster="video/night.jpg" aria-hidden="true"></video>
-  <div class="wrap">
-    <div>
-      <div class="lbl sky rv">07 · Share a flight</div>
-      <h2 class="h rv">airplane mode on.<br><em>family still watching.</em></h2>
-      <p class="rv" style="color:var(--ink-2);max-width:440px;margin-top:22px">Your phone keeps recording GPS at cruise, with no signal. The moment you land, the whole track uploads. Until then, they see radar and our estimate.</p>
-      <a class="pill sky rv" href="/share" style="margin-top:28px">Start sharing <svg><use href="#arr"/></svg></a>
-    </div>
-    <div class="check rv" id="check">
-      <h4>BEFORE TAKEOFF</h4><div class="sub">CHECKLIST · SHR-04 · 3 ITEMS</div>
-      <div class="ci"><span class="bx"></span><div><b>open /share at the gate</b><p>Type your flight number. Keep the tab open, it holds the screen awake.</p></div><span class="st">PENDING</span></div>
-      <div class="ci"><span class="bx"></span><div><b>airplane mode, on</b><p>GPS still works above the clouds. Every fix is saved on your phone.</p></div><span class="st">PENDING</span></div>
-      <div class="ci"><span class="bx"></span><div><b>send one link</b><p>They follow your phone's track, filled in by radar while you're offline.</p></div><span class="st">PENDING</span></div>
-    </div>
-  </div>
-  <div class="slate"><i></i>Cam 03 · night · above the deck</div>
-</section>
-
 <!-- 08 · BOARDING -->
 <section class="film board-sec" id="board-sec">
   <img class="poster" src="video/nose.jpg" alt="" loading="lazy">
@@ -524,9 +503,6 @@ document.querySelectorAll('video[data-v]').forEach(v => {
 new IntersectionObserver(([e], o) => { if (!e.isIntersecting) return; o.disconnect();
   document.querySelectorAll('.fs').forEach((s, i) => setTimeout(() => s.classList.add('in'), i * 140)); }, {threshold: .2}).observe($('bayEl'));
 
-/* ---------- checklist ticks itself as you scroll into it ---------- */
-new IntersectionObserver(([e], o) => { if (!e.isIntersecting) return; o.disconnect();
-  document.querySelectorAll('.ci').forEach((c, i) => setTimeout(() => { c.classList.add('done'); c.querySelector('.st').textContent = 'CHECKED'; }, 500 + i * 700)); }, {threshold: .5}).observe($('check'));
 
 /* ---------- manifesto: word-by-word with scroll, rhino charges across ---------- */
 (function mani() {
