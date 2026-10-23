@@ -10,7 +10,7 @@ jobs:
   health:
     runs-on: ubuntu-latest
     env:
-      APP_URL: ${{ vars.APP_URL || 'https://blackrhino.in' }}
+      APP_URL: ${{ vars.APP_URL || 'https://flight-tracker-india.vercel.app' }}   # the vercel.app address skips Vercel's attack-mode challenge, which bots like this one cannot pass
       HISTORY_URL: ${{ vars.HISTORY_URL || 'https://flight-history.duospace-api.workers.dev' }}
     steps:
       - name: Live feed has aircraft

@@ -24,9 +24,14 @@ export const hidden = f => {
   return MIL_SEEN.has(f.hex) || BLOCK.has(f.hex.toUpperCase().replace(/^~/, '')) || (!!f.reg && BLOCK.has(f.reg));
 };
 
+// community feeds are untrusted input: numbers stay numbers, text is reduced to a plain, short alphabet (no markup can reach the page)
+const safeStr = v => String(v).replace(/[^A-Za-z0-9 .,:;()&/+#'_-]/g, '').slice(0, 60);
+const safeX = v => typeof v === 'number' ? (Number.isFinite(v) ? v : undefined) : typeof v === 'boolean' ? v
+  : typeof v === 'string' ? safeStr(v) : Array.isArray(v) ? v.slice(0, 12).map(safeStr) : undefined;
+
 export function convert(a, now, src) {
   const ground = a.alt_baro === 'ground', x = {};
-  for (const k of X_FIELDS) if (k in a) x[k] = a[k];
+  for (const k of X_FIELDS) if (k in a) { const v = safeX(a[k]); if (v !== undefined) x[k] = v; }
   return {hex: String(a.hex || '').toLowerCase(), flight: tag(a.flight) || '', reg: tag(a.r), type: tag(a.t), lat: a.lat, lon: a.lon,
     alt: ground ? null : a.alt_baro, ground, gs: a.gs || 0, track: a.track ?? a.true_heading ?? 0,
     vr: a.baro_rate ?? a.geom_rate ?? 0, squawk: /^\d{4}$/.test(a.squawk) ? a.squawk : undefined, emergency: a.emergency != null && a.emergency !== 'none',

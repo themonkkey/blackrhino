@@ -21,3 +21,4 @@ relay/*.log
 eta/.venv/
 *.pyc
 data/cache_osm/
+film/teaser/

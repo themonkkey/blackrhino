@@ -165,7 +165,7 @@ function render() {
   }
   $('src').innerHTML = [
     gps.length ? `Phone GPS: ${gps.length.toLocaleString('en-IN')} points, last ${ago(Date.now() / 1000 - gps[gps.length - 1][0])}` : 'Phone GPS: no points yet (uploads when the phone is online)',
-    meta.callsign ? `Radar (${meta.callsign}): ${radar ? 'last fix ' + ago(Date.now() / 1000 - radar.ts) : 'not seen yet'}` : '',
+    meta.callsign ? `Radar (${String(meta.callsign).replace(/[^A-Z0-9]/g, '')}): ${radar ? 'last fix ' + ago(Date.now() / 1000 - radar.ts) : 'not seen yet'}` : '',
     c.src === 'est' ? 'Position is modelled from the last radar fix (no coverage near the airport).' : ''].filter(Boolean).join('<br>');
 }
 pollShare(); setInterval(pollShare, 5000);

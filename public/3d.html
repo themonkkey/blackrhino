@@ -34,8 +34,7 @@ body.has-flight #watchBar{display:none}
 <link rel="preconnect" href="https://fonts.googleapis.com"><link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
 <link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Montserrat+Alternates:wght@400;500;600&family=Montserrat:wght@400;500;600;700&family=JetBrains+Mono:wght@400;500&display=swap">
 <link rel="stylesheet" href="app.css">
-<script type="importmap">{"imports": {"three": "https://cdn.jsdelivr.net/npm/three@0.160.0/build/three.module.js",
-  "three/addons/": "https://cdn.jsdelivr.net/npm/three@0.160.0/examples/jsm/"}}</script>
+<script type="importmap">{"imports": {"three": "https://cdn.jsdelivr.net/npm/three@0.160.0/build/three.module.js", "three/addons/": "https://cdn.jsdelivr.net/npm/three@0.160.0/examples/jsm/"}, "integrity": {"https://cdn.jsdelivr.net/npm/three@0.160.0/build/three.module.js": "sha384-61S/Nu32S3E5+n+KpCOTb2eRYps6fVKm+9Gz1QBvSePFthb46f063Aa/qe/lykFZ", "https://cdn.jsdelivr.net/npm/three@0.160.0/examples/jsm/controls/OrbitControls.js": "sha384-qlO/ZugKPxAQUAvTlQoo0QECzxJIJySZmCF/DHdb2Xn/hHndFwX/vfUAC9Hbk6LP", "https://cdn.jsdelivr.net/npm/three@0.160.0/examples/jsm/objects/Sky.js": "sha384-wuDrkXs4/6ZP+utdQQ7XggxDVg1Lt50OuvF4p/Ac5chibUcyJqnBdJqACclm1Hea", "https://cdn.jsdelivr.net/npm/three@0.160.0/examples/jsm/loaders/GLTFLoader.js": "sha384-oxY9vSeh7Mrt5WmhN8xfWoDRnmoW9krEiRBY7vJKaK90jMUidM0fhbUwcblpBgTu", "https://cdn.jsdelivr.net/npm/three@0.160.0/examples/jsm/renderers/CSS2DRenderer.js": "sha384-oxPlnJSeUCYU9W3RMQswb4S/vFd4Bhxuy1Ffx0V2KJakWeb6n1gaqUtSE9Ic/F72", "https://cdn.jsdelivr.net/npm/three@0.160.0/examples/jsm/utils/BufferGeometryUtils.js": "sha384-jHGXS4+FuVOBnZkNme2ury3Ccg5DWDLYK22xX/WGdZCZsjRM4J+3n6Qc4CXx1Hjf"}}</script>
 </head>
 <body class="v3d">
 <div id="gl"></div><div id="labels"></div>
@@ -485,7 +484,8 @@ function stepDemo(now, dt) {
       // 3 deg glide to a touchdown 400 m past the threshold, slowing to 135 kt; flare from 15 m
       const toTd = 400 - D2.s, glide = Math.max(0, toTd) * Math.tan(3 * R);
       D2.v = Math.max(69.5, D2.v - 0.06 * dt);
-      const flare = D2.agl < 15, vs = flare ? -Math.max(0.6, D2.agl * 0.12) : -(D2.agl - glide) * 0.4 - D2.v * Math.tan(3 * R);
+      // flare from ~30 ft: sink rate bleeds off over ~4-5 s, touching down at ~1.6 m/s (firm but normal), ~550 m past the threshold
+      const flare = D2.agl < 9, vs = flare ? -Math.max(1.6, D2.agl * 0.35) : -(D2.agl - glide) * 0.4 - D2.v * Math.tan(3 * R);
       D2.agl = Math.max(0, D2.agl + vs * dt); D2.s += D2.v * dt;
       D2.pit = (flare ? 5.5 : 3.2) * R;
       d.vr = vs / FT2M * 60;
@@ -725,6 +725,7 @@ FT.init({
 
 // ================= frame loop =================
 let lastF = performance.now(), sunT = 0, trailKey = '';
+let camFn = null;
 // adaptive resolution: drop the pixel ratio when frames run long, restore it when there is headroom
 const DPR_MAX = Math.min(devicePixelRatio, MOBILE ? 1.5 : 1.75), DPR_MIN = Math.min(1, DPR_MAX);
 let dpr = DPR_MAX, slowN = 0, fastN = 0;
@@ -783,6 +784,8 @@ function frame(t) {
         trail.visible = true;
       }
       // camera follows the aircraft: keep the user's orbit offset, move with the plane
+      // debug camera rig (film capture): positioned here, after the plane moved and before render, so they never drift apart
+      if (camFn && camMode === 'free' && !flyT) camFn(p, camera, controls.target);
       if (!flyT && camMode !== 'free') {
         const tgt = V.set(p.x, p.y, p.z);
         if (camMode === 'chase') {
@@ -835,7 +838,7 @@ function frame(t) {
   document.addEventListener('visibilitychange', () => { if (!document.hidden) poll(); });
 })();
 // debug/test hook only with ?debug
-if (new URLSearchParams(location.search).has('debug')) window.__skyline = {get demo() { return DEMO; }, startDemo, setCam: m => setCam(m), tick: () => frame(performance.now()), planes, camera, controls, scene, renderer, select: h => select(h), get selected() { return selected; }};
+if (new URLSearchParams(location.search).has('debug')) window.__skyline = {get demo() { return DEMO; }, startDemo, setCam: m => setCam(m), freeCam: () => { camMode = 'free'; flyT = null; }, setCamFn: f => { camFn = f; }, tick: () => frame(performance.now()), planes, camera, controls, scene, renderer, select: h => select(h), get selected() { return selected; }};
 </script>
 </body>
 </html>
