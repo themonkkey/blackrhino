@@ -56,7 +56,7 @@ if ('serviceWorker' in navigator) navigator.serviceWorker.register('sw.js');</sc
   <div class="meta"><span><b id="nView">0</b> in view</span><span>updated <b id="age">-</b></span>
     <label title="Trails (T)"><input type="checkbox" id="trails" checked> trails</label><button class="ib" id="bSrc" title="Data sources">i</button></div>
 </div>
-<div id="near" class="hud"><div class="ttl">Near you <button class="ib" id="nearX" title="Stop" aria-label="Stop">&times;</button></div>
+<div id="near" class="hud"><div class="ttl">Near you <span class="more" id="nearMore">All nearby</span> <button class="ib" id="nearX" title="Stop" aria-label="Stop">&times;</button></div>
   <div id="nearTop"></div><canvas id="sky" width="440" height="440"></canvas><div id="nearList"></div>
   <label class="nalert"><input type="checkbox" id="nearAlert"> Beep when one is about to pass over me</label>
   <div class="note" id="nearNote">Your location stays on this device.</div></div>
@@ -363,6 +363,9 @@ function renderNear() {
 const goTo = (hex, z) => { const p = planes.get(hex); if (p) { focus([p.lat ?? p.d.lat, p.lon ?? p.d.lon], Math.max(map.getZoom(), z)); select(hex); } };
 document.getElementById('nearTop').addEventListener('click', e => { const r = e.target.closest('.ntop'); if (r) goTo(r.dataset.hex, 11); });
 nearList.addEventListener('click', e => { const r = e.target.closest('.nrow[data-hex]'); if (r) goTo(r.dataset.hex, 10); });
+const phoneQ = matchMedia('(max-width:700px)');
+(function () { const q = document.getElementById('q'), full = q.placeholder; const fit = () => q.placeholder = phoneQ.matches ? 'Search or ask\u2026' : full; fit(); phoneQ.addEventListener('change', fit); })();
+nearEl.querySelector('.ttl').addEventListener('click', e => { if (!e.target.closest('#nearX') && phoneQ.matches) nearEl.classList.toggle('open'); });   // phone: the sheet is one card, tap to see all nearby
 function startNear() {
   nearEl.style.display = 'block'; nearNote.textContent = 'Finding you…';
   NEAR.compassStart();   // phone compass: a tap is needed on iPhone to allow it
@@ -370,7 +373,7 @@ function startNear() {
   const b = document.getElementById('bNear'); b.classList.add('on'); b.setAttribute('aria-pressed', 'true');
   NEAR.start((m, first) => {
     me = m; nearNote.textContent = `Your location stays on this device. GPS ±${Math.round(m.acc)} m`;
-    if (first) map.setView([m.lat, m.lon], Math.max(map.getZoom(), 11));
+    if (first) { map.setView([m.lat, m.lon], Math.max(map.getZoom(), 11)); if (phoneQ.matches) map.panBy([0, innerHeight * 0.16], {animate: false}); }   // phone: keep you above the sheet
     dirty = true; renderNear();
   }, msg => { nearNote.textContent = msg; stopNear(true); });
 }

@@ -333,3 +333,25 @@ body.v3d #near .mebtns button{padding:0 6px}
 .metag.cpa::before{display:none}
 body.v3d #near .mebtns+.mebtns{margin-top:0}
 #near .mebtns button{min-width:0}
+
+/* phone + installed-app polish */
+html,body{overscroll-behavior:none;-webkit-tap-highlight-color:transparent}
+.hud button,.tb,.seg a,#qChip{touch-action:manipulation;-webkit-user-select:none;user-select:none}
+#near .more{display:none}
+@media (max-width:700px){
+  #near{padding:8px 12px;max-height:46vh;bottom:calc(72px + env(safe-area-inset-bottom));border-radius:14px}
+  #near .ttl{cursor:pointer;gap:8px}
+  #near .ttl .more{display:inline;margin-left:auto;font:500 11px var(--mono);color:var(--sky);letter-spacing:.02em}
+  #near .ttl .more::after{content:" \25BE"}
+  #near.open .ttl .more::after{content:" \25B4"}
+  #near:not(.open) #nearList,#near:not(.open) .nalert,#near:not(.open) #nearNote{display:none}
+  #nearTop .ntop{margin-top:4px}
+  #qChip{top:calc(70px + env(safe-area-inset-top));height:34px;padding:0 14px;font-size:12px}
+  #nearToast{top:calc(110px + env(safe-area-inset-top))}
+  .ib{min-width:36px;min-height:36px}
+}
+@media (display-mode:standalone){
+  #top{top:calc(10px + env(safe-area-inset-top))}
+  body{-webkit-touch-callout:none}
+}
+@media (max-width:700px){#near:not(.open) .mebtns+.mebtns{display:none}}

@@ -1,6 +1,6 @@
 // Cache-first for libraries, models and map tiles so repeat visits open instantly.
 // Pages are network-first (cache only as offline fallback); live flight data (/api) is never cached.
-const LIB = 'ft-lib-v4', TILES = 'ft-tiles-v1', PAGES = 'br-pages-v21', MAX_TILES = 4000;
+const LIB = 'ft-lib-v4', TILES = 'ft-tiles-v1', PAGES = 'br-pages-v22', MAX_TILES = 4000;
 const SHELL = ['./', 'map', '3d', 'globe', 'share', 'live', 'config.js', 'shared.js', 'shared-extra.js', 'near.js', 'slm.js', 'eta.js', 'fir.json', 'app.css', 'airports.json', 'manifest.webmanifest',
   'icons/icon-192.png', 'icons/icon-512.png', 'icons/favicon-32.png', 'icons/mark.svg'];
 
