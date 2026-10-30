@@ -18,20 +18,21 @@
 <meta property="og:image" content="https://blackrhino.in/og.jpg"><meta property="og:image:width" content="1200"><meta property="og:image:height" content="630">
 <meta name="twitter:card" content="summary_large_image"><meta name="twitter:image" content="https://blackrhino.in/og.jpg">
 <link rel="canonical" href="https://blackrhino.in/map">
+<link rel="preconnect" href="https://tiles.openfreemap.org" crossorigin><link rel="preconnect" href="https://cdn.jsdelivr.net" crossorigin>
 <script>window.__first = fetch('/api/flights').then(r => r.json()).catch(() => null);
+window.__style = fetch('https://tiles.openfreemap.org/styles/dark').then(r => r.json());
 if ('serviceWorker' in navigator) navigator.serviceWorker.register('sw.js');</script>
-<link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/leaflet/1.9.4/leaflet.min.css" integrity="sha512-h9FcoyWjHcOcmEVkxOfTLnmZFWIH0iZhZT1H2TbOq55xssQGEJHEaIm+PgoUaZbRvQTNTluNOEfb1ZRy6D3BOw==" crossorigin="anonymous">
-<script src="https://cdnjs.cloudflare.com/ajax/libs/leaflet/1.9.4/leaflet.min.js" integrity="sha512-puJW3E/qXDqYp9IfhAI54BJEaWIfloJ7JWs7OeD5i6ruC9JZL1gERT1wjtwXFlh7CjE7ZJ+/vcRZRkIYIb6p4g==" crossorigin="anonymous" defer></script>
 <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/maplibre-gl@5.24.0/dist/maplibre-gl.css" integrity="sha384-uTttxo/aOKbdE5RlD/SPzSDoDmNvGlUYPjONi2MN/b7c9HPSvW07OIuyP7uL6jxK" crossorigin="anonymous">
 <script src="https://cdn.jsdelivr.net/npm/maplibre-gl@5.24.0/dist/maplibre-gl.js" integrity="sha384-5+cfbwT0iiub6VsQAdn6yz16nr6sDiQoHx6tm4O8OVYXHYOxcffFmCJBL0dgdvGp" crossorigin="anonymous" defer></script>
-<script src="https://cdn.jsdelivr.net/npm/@maplibre/maplibre-gl-leaflet@0.1.4/leaflet-maplibre-gl.js" integrity="sha384-tXYNKOHx4T02jMP7YYCtBxPIv1B5gaA5mcVPBzqMp6d7VzWzxJgI2aWF/nJLrQdS" crossorigin="anonymous" defer></script>
 <script src="config.js" defer></script>
 <script src="shared.js" defer></script>
 <script src="eta.js" defer></script>
 <script src="shared-extra.js" defer></script>
+<script src="near.js" defer></script>
+<script src="slm.js" defer></script>
 <style>#map{position:absolute;inset:0}#fx{position:absolute;inset:0;z-index:400;pointer-events:none}</style>
 <link rel="preconnect" href="https://fonts.googleapis.com"><link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
-<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Montserrat+Alternates:wght@400;500;600&family=Montserrat:wght@400;500;600;700&family=JetBrains+Mono:wght@400;500&display=swap">
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Montserrat+Alternates:wght@400;500;600&family=Montserrat:wght@400;500;600;700&family=JetBrains+Mono:wght@400;500&display=swap" media="print" onload="this.media='all'">
 <link rel="stylesheet" href="app.css">
 </head>
 <body>
@@ -39,12 +40,14 @@ if ('serviceWorker' in navigator) navigator.serviceWorker.register('sw.js');</sc
 <div id="top" class="hud">
   <a class="brand" href="/" title="blackrhino home"><svg viewBox="0 0 64 64"><path d="M5 31C5 23 11 18 20 18L32 18C35 18 37.5 18.8 39.5 20.5L40 15.8C40.3 14 42.6 13.8 43 15.6L43.6 21.6C46.5 23.5 48.5 26.5 50 29.5L51.3 26.4L53.2 31C55.5 27.5 58.2 22.5 61.5 19C61 25.5 59.5 31.5 57.5 35.5C59.2 37.5 59.7 40.5 58.8 43.2C56.3 45.7 51.2 45.8 47.6 44.2L44.6 45.4L44 54L37.4 54L37 48L21 48L20.5 54L13.8 54L13.2 46.2C8 43.8 5 38.2 5 31Z"/></svg>blackrhino<span class="br-dot"></span></a>
   <span class="live"><span class="dot"></span><b id="nAll">…</b> live</span>
-  <input id="q" type="search" placeholder="Flight, registration or airport" autocomplete="off" enterkeyhint="search" aria-label="Search">
+  <input id="q" type="search" placeholder="Flight, airport, or ask: indigo above 30k ft" autocomplete="off" enterkeyhint="search" aria-label="Search">
 </div>
 <nav id="tools" class="hud" aria-label="Tools">
   <span class="sep wide"></span>
+  <button id="bTilt" class="tb" aria-pressed="false" title="Tilted 3D view: terrain, buildings, planes at altitude (D)"><svg viewBox="0 0 24 24" aria-hidden="true"><path d="M12 3l9 5-9 5-9-5z"/><path d="M3 13l9 5 9-5"/></svg><span>Tilt 3D</span></button>
+  <button id="bNear" class="tb" aria-pressed="false" title="Planes around you, using this device's GPS (N)"><svg viewBox="0 0 24 24" aria-hidden="true"><path d="M20.5 3.5 3.8 10.6c-.7.3-.6 1.3.1 1.5l6.4 1.9 1.9 6.4c.2.7 1.2.8 1.5.1z"/></svg><span>Near me</span></button>
   <button id="bReplay" class="tb" title="Replay the last 3 hours seen on this device (R)"><svg viewBox="0 0 24 24" aria-hidden="true"><path d="M3 12a9 9 0 1 0 3-6.7L3 8"/><path d="M3 3v5h5"/><path d="M12 7v5l3 2"/></svg><span>Replay</span></button>
-  <span class="seg"><a class="on" href="/map">2D</a><a href="3d">3D</a></span>
+  <span class="seg"><a class="on" href="/map">2D</a><a id="to3d" href="3d" title="Same flight in 3D (V)">3D</a></span>
 </nav>
 <div id="info" class="hud"><span id="close">×</span><div id="infoBody"></div></div>
 <div id="scope" class="hud">
@@ -53,20 +56,24 @@ if ('serviceWorker' in navigator) navigator.serviceWorker.register('sw.js');</sc
   <div class="meta"><span><b id="nView">0</b> in view</span><span>updated <b id="age">-</b></span>
     <label title="Trails (T)"><input type="checkbox" id="trails" checked> trails</label><button class="ib" id="bSrc" title="Data sources">i</button></div>
 </div>
+<div id="near" class="hud"><div class="ttl">Near you <button class="ib" id="nearX" title="Stop" aria-label="Stop">&times;</button></div>
+  <div id="nearTop"></div><canvas id="sky" width="440" height="440"></canvas><div id="nearList"></div>
+  <label class="nalert"><input type="checkbox" id="nearAlert"> Beep when one is about to pass over me</label>
+  <div class="note" id="nearNote">Your location stays on this device.</div></div>
 <div id="src" class="hud">connecting…</div>
-<div id="alert"></div>
+<div id="alert"></div><div id="nearToast" role="status"></div>
 <div id="rp" class="hud"><button id="rpPlay">▶</button><button id="rpSpd">×30</button><input id="rpPos" type="range" min="0" max="1000" value="1000"><span class="t" id="rpT">-</span><button id="rpLive">Live</button></div>
-<div id="keys" class="hud"><div class="stat" style="margin-bottom:6px">Keyboard</div><div><kbd>/</kbd>search</div><div><kbd>Esc</kbd>close panel / deselect</div><div><kbd>T</kbd>trails on/off</div><div><kbd>F</kbd>follow selected flight</div><div><kbd>R</kbd>replay</div><div><kbd>Space</kbd>play / pause replay</div><div><kbd>+ −</kbd>zoom</div><div><kbd>?</kbd>this help</div></div>
+<div id="keys" class="hud"><div class="stat" style="margin-bottom:6px">Keyboard</div><div><kbd>/</kbd>search</div><div><kbd>Esc</kbd>close panel / deselect</div><div><kbd>T</kbd>trails on/off</div><div><kbd>F</kbd>follow selected flight</div><div><kbd>D</kbd>tilted 3D view (drag right-button / two fingers to rotate)</div><div><kbd>N</kbd>planes near me (GPS)</div><div><kbd>V</kbd>same flight in 3D</div><div><kbd>R</kbd>replay</div><div><kbd>Space</kbd>play / pause replay</div><div><kbd>+ −</kbd>zoom</div><div><kbd>?</kbd>this help</div></div>
 
 
 <script>
-addEventListener('DOMContentLoaded', () => {
+addEventListener('DOMContentLoaded', async () => {
 const POLL = 15000;   // matches the 15 s CDN cache on /api/flights: faster polling only re-downloads the same data
-const map = L.map('map', {zoomControl: false, worldCopyJump: true}).setView([22.5, 79], 5);
-L.control.zoom({position: 'bottomright'}).addTo(map);
 // Base map: OpenFreeMap vector tiles (free, no key, OpenStreetMap data), restyled to the BlackRhino palette.
 // Country/state boundary layers are hidden: a flight tracker doesn't need them and Indian law requires official boundaries.
-fetch('https://tiles.openfreemap.org/styles/dark').then(r => r.json()).then(st => {
+const ATTR = 'data: adsb.fi, adsb.lol, OpenSky, adsbdb · <a href="/credits">credits</a> · <a href="/privacy">privacy</a>';
+const FALLBACK = {version: 8, sources: {b: {type: 'raster', tileSize: 256, maxzoom: 16, tiles: ['https://server.arcgisonline.com/ArcGIS/rest/services/Canvas/World_Dark_Gray_Base/MapServer/tile/{z}/{y}/{x}'], attribution: 'Tiles Powered by Esri'}}, layers: [{id: 'b', type: 'raster', source: 'b'}]};
+function restyle(st) {
   for (const l of st.layers) {
     const id = l.id, p = l.paint = l.paint || {};
     if (id.startsWith('boundary') || id.startsWith('road_oneway')) { (l.layout = l.layout || {}).visibility = 'none'; continue; }
@@ -81,8 +88,70 @@ fetch('https://tiles.openfreemap.org/styles/dark').then(r => r.json()).then(st =
       if (l.layout && l.layout['text-field'] && /^(place|water_name)/.test(id)) l.layout['text-field'] = ['coalesce', ['get', 'name:en'], ['get', 'name_en'], ['get', 'name:latin'], ['get', 'name']];
     }
   }
-  L.maplibreGL({style: st, attribution: '<a href="https://openfreemap.org" target="_blank" rel="noopener">OpenFreeMap</a> &copy; <a href="https://www.openmaptiles.org/" target="_blank" rel="noopener">OpenMapTiles</a> &copy; <a href="https://www.openstreetmap.org/copyright" target="_blank" rel="noopener">OpenStreetMap</a> · data: adsb.fi, adsb.lol, OpenSky, adsbdb · <a href="/credits">credits</a> · <a href="/privacy">privacy</a>'}).addTo(map);
-}).catch(() => L.tileLayer('https://server.arcgisonline.com/ArcGIS/rest/services/Canvas/World_Dark_Gray_Base/MapServer/tile/{z}/{y}/{x}', {className: 'br-base', attribution: 'Tiles <a href="https://www.esri.com" target="_blank" rel="noopener">Powered by Esri</a> · Esri, HERE, Garmin', maxZoom: 16}).addTo(map));
+  return st;
+}
+const style = await window.__style.then(restyle, () => FALLBACK);
+const urlq0 = new URLSearchParams(location.search), ll0 = (urlq0.get('ll') || '').split(',').map(Number);
+const have0 = ll0.length === 3 && ll0.every(Number.isFinite) && Math.abs(ll0[0]) <= 90 && Math.abs(ll0[1]) <= 180;
+const mgl = new maplibregl.Map({container: 'map', style, center: have0 ? [ll0[1], ll0[0]] : [79, 22.5], zoom: have0 ? Math.min(Math.max(ll0[2], 3), 16) : 5,
+  minZoom: 2, maxZoom: 17, maxPitch: 0, attributionControl: {compact: true, customAttribution: ATTR}, renderWorldCopies: true, fadeDuration: 0, canvasContextAttributes: {antialias: true}});
+mgl.addControl(new maplibregl.NavigationControl({visualizePitch: true}), 'bottom-right');
+mgl.dragRotate.disable(); mgl.touchZoomRotate.disableRotation();
+
+// Leaflet-style facade: the canvas overlay below talks to `map`, so only this block knows about MapLibre.
+const map = {
+  getZoom: () => mgl.getZoom(),
+  getCenter: () => { const c = mgl.getCenter(); return {lat: c.lat, lng: c.lng}; },
+  latLngToContainerPoint: q => mgl.project([q[1], q[0]]),
+  setView: (q, z) => mgl.jumpTo({center: [q[1], q[0]], zoom: z}),
+  panTo: q => mgl.setCenter([q[1], q[0]]),
+  panBy: o => mgl.panBy(o, {animate: false}),
+  getContainer: () => mgl.getCanvasContainer(),
+  on: (ev, fn) => {
+    if (ev === 'click') mgl.on('click', e => fn({containerPoint: e.point}));
+    else if (ev === 'zoomstart' || ev === 'zoomend') return;   // the canvas is redrawn every frame, no need to hide it while zooming
+    else mgl.on(ev, fn);
+  },
+};
+
+mgl.once('load', () => performance.mark('map-ready'));
+window.__br = {mgl, setTilt: on => setTilt(on), setLayer: (n, on) => setLayer(n, on)};
+// ---- 3D mode: tilt + terrain (Terrarium DEM) + extruded OSM buildings; planes are lifted to their altitude
+let tilt = false, styleReady = false;
+mgl.once('style.load', () => styleReady = true);   // isStyleLoaded() is false while any tile loads, so track the first load ourselves
+const whenStyle = fn => styleReady ? fn() : mgl.once('style.load', fn);
+const DEM = {type: 'raster-dem', encoding: 'terrarium', tileSize: 256, maxzoom: 14, tiles: ['https://s3.amazonaws.com/elevation-tiles-prod/terrarium/{z}/{x}/{y}.png'], attribution: 'Mapzen'};
+function setTilt(on, quick) {
+  tilt = on; dirty = true;
+  document.getElementById('bTilt').classList.toggle('on', on);
+  document.getElementById('bTilt').setAttribute('aria-pressed', on);
+  const go = () => {
+    if (on) {
+      if (!mgl.getSource('dem')) mgl.addSource('dem', DEM);
+      if (!mgl.getLayer('hill')) mgl.addLayer({id: 'hill', type: 'hillshade', source: 'dem', paint: {'hillshade-exaggeration': .5, 'hillshade-shadow-color': '#010203', 'hillshade-highlight-color': '#1c2d3d', 'hillshade-accent-color': '#06101a'}}, 'water');
+      if (!mgl.getLayer('bld3d')) mgl.addLayer({id: 'bld3d', type: 'fill-extrusion', source: 'openmaptiles', 'source-layer': 'building', minzoom: 12,
+        paint: {'fill-extrusion-color': '#16222e', 'fill-extrusion-height': ['coalesce', ['get', 'render_height'], 8], 'fill-extrusion-base': ['coalesce', ['get', 'render_min_height'], 0], 'fill-extrusion-opacity': .88, 'fill-extrusion-vertical-gradient': true}});
+      mgl.setTerrain({source: 'dem', exaggeration: 1.4});
+      mgl.setMaxPitch(75); mgl.dragRotate.enable(); mgl.touchZoomRotate.enableRotation();
+      mgl.easeTo({pitch: 62, duration: quick ? 0 : 900});
+    } else {
+      mgl.setTerrain(null);
+      for (const id of ['bld3d', 'hill']) if (mgl.getLayer(id)) mgl.removeLayer(id);
+      if (mgl.getSource('dem')) mgl.removeSource('dem');
+      mgl.dragRotate.disable(); mgl.touchZoomRotate.disableRotation();
+      mgl.easeTo({pitch: 0, bearing: 0, duration: quick ? 0 : 700}).once('moveend', () => mgl.setMaxPitch(0));
+    }
+  };
+  whenStyle(go);
+}
+// screen position of a point at altitude ft: in 3D the plane is lifted above its ground point (exaggerated x2 so it reads at country zoom)
+function scr(lat, lon, ft) {
+  const p = mgl.project([lon, lat]);
+  if (!tilt || ft == null) { p.gx = p.x; p.gy = p.y; return p; }
+  const pitch = mgl.getPitch() * Math.PI / 180, mpp = 78271.5 * Math.cos(lat * Math.PI / 180) / 2 ** mgl.getZoom();
+  p.gx = p.x; p.gy = p.y; p.y -= Math.min(ft * .3048 * 2 / mpp * Math.sin(pitch), 220);
+  return p;
+}
 
 // All planes + trails are drawn on ONE canvas (no per-plane DOM nodes).
 const cv = document.getElementById('fx'), ctx = cv.getContext('2d');
@@ -100,7 +169,7 @@ function shapeOf(d) {
   return d._sh = c === 'A7' || HELI_T.test(t) ? [HELI, 0.9] : PROP_T.test(t) ? [PROP, 0.95] : c === 'A1' || LIGHT_T.test(t) ? [PROP, 0.72]
     : c === 'A5' || WIDE_T.test(t) ? [PLANE, 1.25] : [PLANE, 1];
 }
-let W = 0, H = 0, DPR = 1;
+let W = 0, H = 0, DPR = 1, BRG = 0;
 function resize() {
   DPR = Math.min(devicePixelRatio || 1, 2); W = innerWidth; H = innerHeight;
   cv.width = W * DPR; cv.height = H * DPR; cv.style.width = W + 'px'; cv.style.height = H + 'px'; dirty = true;
@@ -109,7 +178,7 @@ addEventListener('resize', resize);
 
 const planes = new Map();   // hex -> {d, pts, err, lat, lon, x, y}
 let view = planes, replay = null;   // replay: {t, playing, speed} while scrubbing history
-let selected = null, lastFetch = 0, serverOffset = 0, dirty = true, moving = false, zooming = false;
+let me = null, selected = null, lastFetch = 0, serverOffset = 0, dirty = true, moving = false, zooming = false;
 resize();
 
 // calm ramp: deep blue low, pale sky high; only the selected plane is pure white
@@ -136,7 +205,7 @@ async function poll(first) {
   inflight = true;
   const c = map.getCenter();
   try {
-    const j = first || await fetch('/api/flights', {headers: {'X-Center': `${c.lat.toFixed(3)},${c.lng.toFixed(3)}`}}).then(r => r.json());
+    const j = first || await fetch('/api/flights', {headers: {'X-Center': `${c.lat.toFixed(1)},${c.lng.toFixed(1)}`}}).then(r => r.json());
     if (!j) throw 0;
     serverOffset = j.now - Date.now() / 1000;
     lastFetch = Date.now();
@@ -188,11 +257,13 @@ function frame(ts) {
 }
 
 function draw() {
+  BRG = mgl.getBearing();
   const t = replay ? replay.t : nowS(), z = map.getZoom(), showTrails = document.getElementById('trails').checked;
   const sz = z >= 10 ? 28 : z >= 9 ? 25 : z >= 8 ? 22 : z >= 7 ? 20 : z >= 6 ? 17 : 15;   // calm at country zoom, rich close in
   ctx.setTransform(DPR, 0, 0, DPR, 0, 0);
   ctx.clearRect(0, 0, W, H);
   drawAirports(z);
+  if (me) drawMe();
   const sel0 = !replay && selected && planes.get(selected);
   if (sel0) drawRoute(sel0);
   let inView = 0;
@@ -207,15 +278,15 @@ function draw() {
       if (k === 0) p.err = null;
     }
     p.lat = lat; p.lon = lon;
-    const pt = map.latLngToContainerPoint([lat, lon]);
-    p.x = pt.x; p.y = pt.y;
+    const pt = scr(lat, lon, d.ground ? null : d.alt);
+    p.x = pt.x; p.y = pt.y; p.gx = pt.gx; p.gy = pt.gy;
     if (pt.x < -40 || pt.y < -40 || pt.x > W + 40 || pt.y > H + 40 || (!FT.onMap(d) && selected !== d.hex)) { p.vis = false; continue; }
     p.vis = true; inView++;
     if (showTrails && (z >= 7 || selected === d.hex) && p.pts.length) {
       ctx.globalAlpha = selected === d.hex ? .9 : .5; ctx.lineWidth = selected === d.hex ? 2 : 1.5;
       let col = null, prev = null;
       for (const q of p.pts) {   // colour by the altitude at each fix; one stroke per run of the same colour
-        const a = map.latLngToContainerPoint(q), c = altColor(q[2], q[2] == null);
+        const a = scr(q[0], q[1], q[2]), c = altColor(q[2], q[2] == null);
         if (c !== col) { if (col) ctx.stroke(); ctx.strokeStyle = col = c; ctx.beginPath(); if (prev) ctx.moveTo(prev.x, prev.y); }
         ctx.lineTo(a.x, a.y); prev = a;
       }
@@ -223,6 +294,7 @@ function draw() {
       ctx.globalAlpha = 1;
     }
   }
+  if (tilt) { ctx.lineWidth = 1; ctx.strokeStyle = 'rgba(124,200,255,.22)'; ctx.beginPath(); for (const p of view.values()) if (p.vis && p.gy != null) { ctx.moveTo(p.gx, p.gy); ctx.lineTo(p.x, p.y); } ctx.stroke(); }
   // planes on top of trails; selected last
   const sel = !replay && selected && planes.get(selected);
   const ap = FT.aptSel;
@@ -236,6 +308,82 @@ function draw() {
   document.getElementById('nView').textContent = inView;
   if (sel && document.getElementById('follow')?.checked) map.panTo([sel.lat, sel.lon], {animate: false});
 }
+
+// ---- near me: this device's GPS -> range rings on the map, an overhead sky chart and a list of the aircraft around you.
+// The position is used only in this page (never sent anywhere); the server only ever sees the map centre rounded to ~11 km.
+const nearEl = document.getElementById('near'), skyCv = document.getElementById('sky'), skyX = skyCv.getContext('2d'), nearList = document.getElementById('nearList'), nearNote = document.getElementById('nearNote');
+function drawMe() {
+  const c = map.latLngToContainerPoint([me.lat, me.lon]);
+  ctx.save(); ctx.setLineDash([3, 5]); ctx.lineWidth = 1; ctx.font = '500 10px "JetBrains Mono",monospace'; ctx.fillStyle = 'rgba(124,200,255,.7)';
+  for (const km of [5, 10, 20]) {
+    const r = Math.abs(map.latLngToContainerPoint([me.lat + km / 111.195, me.lon]).y - c.y);
+    if (r < 12 || r > Math.max(W, H) * 1.5) continue;
+    ctx.strokeStyle = 'rgba(124,200,255,.32)'; ctx.beginPath(); ctx.arc(c.x, c.y, r, 0, 7); ctx.stroke();
+    ctx.setLineDash([]); ctx.fillText(km + ' km', c.x + 4, c.y - r - 3); ctx.setLineDash([3, 5]);
+  }
+  ctx.restore();
+  if (me.acc && me.acc < 3000) {   // GPS accuracy circle
+    const r = Math.abs(map.latLngToContainerPoint([me.lat + me.acc / 111195, me.lon]).y - c.y);
+    ctx.beginPath(); ctx.arc(c.x, c.y, Math.max(r, 6), 0, 7); ctx.fillStyle = 'rgba(124,200,255,.12)'; ctx.fill();
+  }
+  if (NEAR.compass.az != null) {   // which way you face: a soft cone that turns with the phone, like Google Maps
+    const a0 = (NEAR.compass.az - 90) * Math.PI / 180, w = 0.5, cg = ctx.createRadialGradient(c.x, c.y, 6, c.x, c.y, 110);
+    cg.addColorStop(0, 'rgba(59,156,255,.8)'); cg.addColorStop(1, 'rgba(59,156,255,0)');
+    ctx.fillStyle = cg; ctx.beginPath(); ctx.moveTo(c.x, c.y); ctx.arc(c.x, c.y, 110, a0 - w, a0 + w); ctx.closePath(); ctx.fill();
+  }
+  // "you are here": calm blue dot with a white ring and a still glow, plus a small tag (no rings, nothing target-like)
+  const gl = ctx.createRadialGradient(c.x, c.y, 4, c.x, c.y, 26); gl.addColorStop(0, 'rgba(80,170,255,.42)'); gl.addColorStop(1, 'rgba(80,170,255,0)');
+  ctx.fillStyle = gl; ctx.beginPath(); ctx.arc(c.x, c.y, 26, 0, 7); ctx.fill();
+  ctx.beginPath(); ctx.arc(c.x, c.y, 7, 0, 7); ctx.fillStyle = '#3b9cff'; ctx.fill(); ctx.lineWidth = 3; ctx.strokeStyle = '#fff'; ctx.stroke();
+  ctx.font = '600 11px Inter,system-ui,sans-serif'; const tw = ctx.measureText('You').width + 14, tx = c.x + 12, ty = c.y - 25;
+  ctx.fillStyle = 'rgba(8,16,28,.82)'; ctx.beginPath(); ctx.roundRect(tx, ty, tw, 18, 9); ctx.fill(); ctx.strokeStyle = 'rgba(124,200,255,.45)'; ctx.lineWidth = 1; ctx.stroke();
+  ctx.fillStyle = '#cfe8ff'; ctx.textAlign = 'left'; ctx.fillText('You', tx + 7, ty + 13);
+}
+function renderNear() {
+  if (!me) return;
+  const rows = NEAR.rows(view), c = NEAR.choose(rows), pick = c.pick, S = 440, cx = S / 2, R0 = 196, RAD = Math.PI / 180;
+  skyX.clearRect(0, 0, S, S);
+  skyX.lineWidth = 1.5; skyX.strokeStyle = 'rgba(124,200,255,.28)'; skyX.fillStyle = 'rgba(124,200,255,.55)'; skyX.font = '500 20px "JetBrains Mono",monospace'; skyX.textAlign = 'center';
+  // radar scope centred on you, radius ~ sqrt(distance) so the close traffic (the planes you can actually see) gets the room
+  for (const km of [5, 10, 20, 30]) { skyX.beginPath(); skyX.arc(cx, cx, R0 * Math.sqrt(km / 30), 0, 7); skyX.stroke(); }
+  skyX.beginPath(); skyX.moveTo(cx, cx - R0); skyX.lineTo(cx, cx + R0); skyX.moveTo(cx - R0, cx); skyX.lineTo(cx + R0, cx); skyX.stroke();
+  skyX.fillText('N', cx, 18); skyX.fillText('S', cx, S - 6); skyX.fillText('E', S - 12, cx + 7); skyX.fillText('W', 12, cx + 7);
+  skyX.beginPath(); skyX.arc(cx, cx, 4, 0, 7); skyX.fill();   // you, at the centre (zenith)
+  for (const r of rows) {
+    const rr = R0 * Math.sqrt(Math.min(r.dk, 30) / 30), x = cx + rr * Math.sin(r.az * RAD), y = cx - rr * Math.cos(r.az * RAD), sel = r.hex === selected;
+    if (pick && r.hex === pick.hex) { skyX.beginPath(); skyX.moveTo(cx, cx); skyX.lineTo(x, y); skyX.strokeStyle = 'rgba(255,107,95,.5)'; skyX.setLineDash([6, 6]); skyX.stroke(); skyX.setLineDash([]); skyX.beginPath(); skyX.arc(x, y, 22, 0, 7); skyX.strokeStyle = '#ff6b5f'; skyX.lineWidth = 2; skyX.stroke(); skyX.strokeStyle = 'rgba(124,200,255,.28)'; skyX.lineWidth = 1.5; }
+    skyX.save(); skyX.translate(x, y); skyX.rotate((r.d.track || 0) * RAD); skyX.scale(sel ? 1.1 : .85, sel ? 1.1 : .85);
+    skyX.fillStyle = sel ? '#fff' : r.slant < 4 ? '#ff6b5f' : altColor(r.d.alt, false); skyX.fill(new Path2D('M0 -14c1.6 0 2.6 1.8 2.6 4v8l11 7v3l-11-3v7l3.4 2.6V15L0 14l-6 1v-1.8l3.4-2.6v-7l-11 3v-3l11-7v-8c0-2.2 1-4 2.6-4z')); skyX.restore();
+    if (r.dk < 14 || sel) { skyX.font = '500 17px "JetBrains Mono",monospace'; skyX.fillStyle = '#e6ebf5'; const left = x > S * 0.62; skyX.textAlign = left ? 'right' : 'left'; skyX.fillText(r.d.flight || r.hex, left ? x - 14 : x + 14, y + 5); skyX.textAlign = 'center'; }
+  }
+  document.getElementById('nearTop').innerHTML = NEAR.bannerHTML(c);
+  NEAR.alert(c);
+  nearList.innerHTML = NEAR.listHTML(rows, selected);
+}
+const goTo = (hex, z) => { const p = planes.get(hex); if (p) { focus([p.lat ?? p.d.lat, p.lon ?? p.d.lon], Math.max(map.getZoom(), z)); select(hex); } };
+document.getElementById('nearTop').addEventListener('click', e => { const r = e.target.closest('.ntop'); if (r) goTo(r.dataset.hex, 11); });
+nearList.addEventListener('click', e => { const r = e.target.closest('.nrow[data-hex]'); if (r) goTo(r.dataset.hex, 10); });
+function startNear() {
+  nearEl.style.display = 'block'; nearNote.textContent = 'Finding you…';
+  NEAR.compassStart();   // phone compass: a tap is needed on iPhone to allow it
+  if (!NEAR.compass.listeners.length) NEAR.compass.listeners.push(() => dirty = true);
+  const b = document.getElementById('bNear'); b.classList.add('on'); b.setAttribute('aria-pressed', 'true');
+  NEAR.start((m, first) => {
+    me = m; nearNote.textContent = `Your location stays on this device. GPS ±${Math.round(m.acc)} m`;
+    if (first) map.setView([m.lat, m.lon], Math.max(map.getZoom(), 11));
+    dirty = true; renderNear();
+  }, msg => { nearNote.textContent = msg; stopNear(true); });
+}
+function stopNear(keep) {
+  NEAR.stop(); me = null; dirty = true;
+  const b = document.getElementById('bNear'); b.classList.remove('on'); b.setAttribute('aria-pressed', 'false');
+  if (!keep) nearEl.style.display = 'none';
+}
+document.getElementById('bNear').onclick = () => NEAR.active ? stopNear() : startNear();
+document.getElementById('nearX').onclick = () => stopNear();
+{ const c = document.getElementById('nearAlert'); c.checked = NEAR.alertOn; c.onchange = () => NEAR.setAlert(c.checked); }
+setInterval(() => { if (me && !document.hidden) renderNear(); }, 700);
+
 // ---- airports (drawn on the same canvas, under the planes) ----
 function drawAirports(z) {
   const showRwy = z >= 9;
@@ -252,9 +400,17 @@ function drawAirports(z) {
       ctx.beginPath(); ctx.moveTo(p1.x, p1.y); ctx.lineTo(p2.x, p2.y); ctx.stroke();
     }
     const r = big ? 4.5 : 3;
-    ctx.beginPath(); ctx.arc(pt.x, pt.y, sel ? 7 : r, 0, 7);
-    ctx.fillStyle = sel ? '#7cc8ff' : big ? '#cbd5e1' : '#8592a8'; ctx.fill();
-    ctx.lineWidth = sel ? 2 : 1; ctx.strokeStyle = sel ? '#fff' : '#0b0f17'; ctx.stroke();
+    // static beacon: a red dot with a soft, still glow that grows with airport size (no rings, no ticks)
+    const x = pt.x, y = pt.y, med = a.type === 'medium', dr = big ? 3.4 : med ? 2.7 : 2.1;
+    if (!sel && (big || med)) {
+      const g = dr * (big ? 4.2 : 3.2), gr = ctx.createRadialGradient(x, y, dr * .6, x, y, g);
+      gr.addColorStop(0, big ? 'rgba(255,196,94,.30)' : 'rgba(255,196,94,.18)'); gr.addColorStop(1, 'rgba(255,196,94,0)');
+      ctx.fillStyle = gr; ctx.beginPath(); ctx.arc(x, y, g, 0, 7); ctx.fill();
+    }
+    ctx.beginPath(); ctx.arc(x, y, sel ? 7 : dr, 0, 7);
+    ctx.fillStyle = sel ? '#7cc8ff' : '#ffc45e'; ctx.fill();
+    if (!sel) { ctx.lineWidth = 1; ctx.strokeStyle = 'rgba(2,4,6,.85)'; ctx.stroke(); }
+    if (sel) { ctx.lineWidth = 2; ctx.strokeStyle = '#fff'; ctx.stroke(); }
     if (z >= (big ? 5 : 8) || sel) {
       ctx.font = `${sel ? 700 : 600} ${sel ? 13 : 11}px ui-sans-serif,sans-serif`;
       ctx.lineWidth = 3; ctx.strokeStyle = '#0b0f17'; ctx.fillStyle = sel ? '#7cc8ff' : '#cbd5e1';
@@ -304,7 +460,7 @@ function drawPlane(p, s, isSel) {
     ctx.beginPath(); ctx.arc(p.x, p.y, s * (.7 + ph * .6), 0, 7); ctx.strokeStyle = `rgba(255,59,47,${1 - ph})`; ctx.lineWidth = 2; ctx.stroke(); dirty = true;
   }
   ctx.setTransform(DPR * k, 0, 0, DPR * k, 0, 0);
-  ctx.translate(p.x / k, p.y / k); ctx.rotate((p.dv || p.d).track * Math.PI / 180); ctx.translate(-12, -12);
+  ctx.translate(p.x / k, p.y / k); ctx.rotate(((p.dv || p.d).track - BRG) * Math.PI / 180); ctx.translate(-12, -12);
   if (p.est) {   // estimated, not live: hollow outline with a dashed edge
     ctx.globalAlpha = .95; ctx.fillStyle = 'rgba(3,4,5,.6)'; ctx.fill(SH);
     ctx.lineWidth = isSel ? 2 : 1.5; ctx.strokeStyle = isSel ? '#fff' : '#7cc8ff'; ctx.setLineDash([2.6, 1.8]); ctx.stroke(SH); ctx.setLineDash([]);
@@ -371,8 +527,37 @@ document.getElementById('q').addEventListener('keydown', e => {
   const r = FT.search(e.target.value);
   if (r && r.hex) { const p = planes.get(r.hex); focus([p.lat ?? p.d.lat, p.lon ?? p.d.lon], 8); select(r.hex); return; }
   if (r && r.icao) { FT.openAirport(r.icao); return; }
-  e.target.style.borderColor = '#ef4444'; setTimeout(() => e.target.style.borderColor = '', 800);
+  askWords(e.target);
 });
+// Ask in words: when the box is not a flight or airport, a small model that runs in this page turns it into a filter
+const qChip = document.createElement('button');
+qChip.id = 'qChip'; qChip.style.display = 'none'; qChip.title = 'Clear this filter';
+document.getElementById('q').insertAdjacentElement('afterend', qChip);
+const setQF = (c, lab) => {
+  if (!c) { FT.qf = null; qChip.style.display = 'none'; dirty = true; return; }
+  FT.qf = {c, lab, hexes: new Set()}; refreshQF(); qChip.style.display = ''; dirty = true;
+};
+function refreshQF() {
+  if (!FT.qf) return;
+  const list = []; for (const p of planes.values()) if (p.d) list.push(p.d);
+  FT.qf.hexes = new Set(SLM.run(FT.qf.c, list).map(d => d.hex));
+  const c = FT.qf.c, routed = (c.from || c.to) ? list.filter(d => d.o && d.d).length : -1;
+  qChip.textContent = `${FT.qf.lab}: ${FT.qf.hexes.size} shown${routed >= 0 ? ` (routes known for ${routed} of ${list.length})` : ''} \u00b7 clear \u2715`; dirty = true;
+}
+qChip.onclick = () => setQF(null);
+setInterval(() => { if (!document.hidden) refreshQF(); }, 1500);
+async function askWords(box) {
+  const q = box.value.trim(), bad = () => { box.style.borderColor = '#ef4444'; setTimeout(() => box.style.borderColor = '', 800); };
+  if (!q || !window.SLM) return bad();
+  const ph = box.placeholder; box.placeholder = 'Thinking\u2026';
+  try {
+    const r = await SLM.ask(q);
+    if (r.all) { setQF(null); box.placeholder = ph; return; }
+    if (r.c) { setQF(r.c, r.lab || r.label); box.placeholder = ph; return; }
+    box.placeholder = r.none ? 'That is not a flight question' : "Didn't get that, try: indigo above 30k ft";
+  } catch (err) { box.placeholder = 'Could not load the search model'; }
+  bad(); setTimeout(() => box.placeholder = ph, 2500);
+}
 
 // on phones the bottom sheet covers the lower half: keep the target in the visible top part
 function focus(ll, z) {
@@ -393,27 +578,34 @@ FT.init({
 
 // ---- map layers: satellite clouds (EUMETSAT WMS), ATC boundaries (FIRs), recorded flight paths
 const layers = {};
+const addLayer = (add, remove) => { whenStyle(add); return remove; };
 function setLayer(name, on) {
-  if (layers[name]) { map.removeLayer(layers[name]); delete layers[name]; }
+  if (layers[name]) { layers[name](); delete layers[name]; }
   if (!on) return;
   if (name === 'clouds') {
-    layers.clouds = L.tileLayer.wms(FT.CLOUD_WMS.url, {layers: FT.CLOUD_WMS.layers, format: 'image/png', transparent: true,
-      opacity: 0.45, className: 'cloud-layer', attribution: 'Clouds: EUMETSAT Meteosat'}).addTo(map);
-    setInterval(() => layers.clouds && layers.clouds.setParams({_t: Math.floor(Date.now() / 9e5)}), 9e5);   // refresh every 15 min
+    const url = () => `${FT.CLOUD_WMS.url}${FT.CLOUD_WMS.url.includes('?') ? '&' : '?'}service=WMS&version=1.1.1&request=GetMap&layers=${FT.CLOUD_WMS.layers}&styles=&format=image/png&transparent=true&srs=EPSG:3857&width=256&height=256&bbox={bbox-epsg-3857}&_t=${Math.floor(Date.now() / 9e5)}`;
+    const add = () => { if (mgl.getSource('clouds')) return; mgl.addSource('clouds', {type: 'raster', tileSize: 256, tiles: [url()], attribution: 'Clouds: EUMETSAT Meteosat'});
+      mgl.addLayer({id: 'clouds', type: 'raster', source: 'clouds', paint: {'raster-opacity': .45, 'raster-fade-duration': 0}}); };
+    const timer = setInterval(() => mgl.getSource('clouds')?.setTiles([url()]), 9e5);   // refresh every 15 min
+    layers.clouds = addLayer(add, () => { clearInterval(timer); if (mgl.getLayer('clouds')) { mgl.removeLayer('clouds'); mgl.removeSource('clouds'); } });
   } else if (name === 'fir') {
     FT.firData().then(fc => {
       if (layers.fir) return;
-      layers.fir = L.geoJSON(fc, {style: {color: '#7dd3fc', weight: 1.3, dashArray: '6 5', fill: false, opacity: .8},
-        onEachFeature: (f, l) => l.bindTooltip(f.properties.name, {permanent: true, direction: 'center', className: 'fir-label'})}).addTo(map);
+      const add = () => { if (mgl.getSource('fir')) return; mgl.addSource('fir', {type: 'geojson', data: fc});
+        mgl.addLayer({id: 'fir-l', type: 'line', source: 'fir', paint: {'line-color': '#7dd3fc', 'line-width': 1.3, 'line-dasharray': [5, 4], 'line-opacity': .8}});
+        mgl.addLayer({id: 'fir-n', type: 'symbol', source: 'fir', layout: {'text-field': ['get', 'name'], 'text-font': ['Noto Sans Regular'], 'text-size': 11}, paint: {'text-color': '#7dd3fc', 'text-halo-color': '#020406', 'text-halo-width': 1.4}}); };
+      layers.fir = addLayer(add, () => { for (const id of ['fir-l', 'fir-n']) if (mgl.getLayer(id)) mgl.removeLayer(id); if (mgl.getSource('fir')) mgl.removeSource('fir'); });
     });
   }
 }
-let trackLayer = null;
 function showTrack(pts) {
-  if (trackLayer) { map.removeLayer(trackLayer); trackLayer = null; }
+  if (mgl.getLayer('trk')) { mgl.removeLayer('trk'); mgl.removeSource('trk'); }
   if (!pts || pts.length < 2) return;
-  trackLayer = L.polyline(pts.map(p => [p[1], p[2]]), {color: '#f472b6', weight: 3, opacity: .9}).addTo(map);
-  map.fitBounds(trackLayer.getBounds(), {padding: [40, 40]});
+  const co = pts.map(p => [p[2], p[1]]);
+  mgl.addSource('trk', {type: 'geojson', data: {type: 'Feature', geometry: {type: 'LineString', coordinates: co}}});
+  mgl.addLayer({id: 'trk', type: 'line', source: 'trk', paint: {'line-color': '#f472b6', 'line-width': 3, 'line-opacity': .9}});
+  const b = new maplibregl.LngLatBounds(co[0], co[0]); for (const c of co) b.extend(c);
+  mgl.fitBounds(b, {padding: 40, animate: false});
 }
 
 // ---- squawk alerts: 7500 hijack, 7600 radio failure, 7700 emergency (or an ADS-B emergency status)
@@ -437,15 +629,17 @@ document.getElementById('alert').addEventListener('click', e => {
 
 // ---- shareable URL: ?ll=lat,lon,zoom&sel=hex is kept in sync (replaceState, no history spam)
 const urlq = new URLSearchParams(location.search);
-{
-  const ll = (urlq.get('ll') || '').split(',').map(Number);
-  if (ll.length === 3 && ll.every(Number.isFinite) && Math.abs(ll[0]) <= 90 && Math.abs(ll[1]) <= 180) map.setView([ll[0], ll[1]], Math.min(Math.max(ll[2], 3), 16), {animate: false});
-}
+document.getElementById('bTilt').onclick = () => setTilt(!tilt);
+if (urlq.get('t') === '3d') setTilt(true);
+const to3D = () => { const q = new URLSearchParams(); const h = selected || (me && NEAR.choose(NEAR.rows(view)).pick?.hex); if (h) q.set('sel', h); if (NEAR.active) q.set('near', '1'); location.href = '3d' + (q.toString() ? '?' + q : ''); };
+document.getElementById('to3d').addEventListener('click', e => { e.preventDefault(); to3D(); });
+if (urlq.get('near') === '1') setTimeout(() => document.getElementById('bNear').click(), 600);
 let wantSel = /^~?[0-9a-f]{6}$/.test(urlq.get('sel') || '') ? urlq.get('sel') : null;
 function syncUrl() {
   const q = new URLSearchParams(location.search), c = map.getCenter();
   q.set('ll', `${c.lat.toFixed(4)},${c.lng.toFixed(4)},${map.getZoom()}`);
   if (selected) q.set('sel', selected); else q.delete('sel');
+  if (tilt) q.set('t', '3d'); else q.delete('t');
   history.replaceState(null, '', location.pathname + '?' + q.toString().replace(/%2C/g, ','));
 }
 map.on('moveend', syncUrl);
@@ -458,6 +652,9 @@ addEventListener('keydown', e => {
   else if (k === 'Escape') { help.style.display = 'none'; if (replay) exitReplay(); else if (document.getElementById('apt').style.display === 'block') FT.closeAirport(); else select(null); }
   else if (k === 't' || k === 'T') { const c = document.getElementById('trails'); c.checked = !c.checked; dirty = true; }
   else if ((k === 'f' || k === 'F') && document.getElementById('follow')) { const c = document.getElementById('follow'); c.checked = !c.checked; c.parentNode.classList.toggle('on', c.checked); }
+  else if (k === 'd' || k === 'D') setTilt(!tilt);
+  else if (k === 'n' || k === 'N') document.getElementById('bNear').click();
+  else if (k === 'v' || k === 'V') to3D();
   else if (k === 'r' || k === 'R') replay ? exitReplay() : enterReplay();
   else if (k === ' ' && replay) { e.preventDefault(); togglePlay(); }
   else if (k === '?') help.style.display = help.style.display === 'block' ? 'none' : 'block';

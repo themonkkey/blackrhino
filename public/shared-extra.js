@@ -115,7 +115,7 @@ FT.passes = d => {
   if (F.bm && !FT.isBookmarked(d)) return false;
   return true;
 };
-FT.onMap = d => !F.onlyMap || FT.passes(d);   // pages ask this when drawing
+FT.onMap = d => (!FT.qf || FT.qf.hexes.has(d.hex)) && (!F.onlyMap || FT.passes(d));   // pages ask this when drawing
 const setF = patch => { F = {...F, ...patch}; save('ft-filters', F); FT.hooks.refilter?.(); FT.renderList(); };
 
 // ---------- layers ----------

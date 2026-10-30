@@ -243,6 +243,7 @@ function makePlan(d) {
   if (rw) {
     const faf = destPoint(rw.thr, (rw.course + 180) % 360, 15), td = destPoint(rw.thr, rw.course, 0.35);
     if (FT.km(d.lat, d.lon, rw.thr[0], rw.thr[1]) > 16) { pts.push(from, faf, td); spd.push(v0, 180 * kt, 135 * kt); alt.push(h0, Math.min(h0, elev + 2600), elev); }
+    else if (FT.km(d.lat, d.lon, rw.thr[0], rw.thr[1]) > 4.5) { const f3 = destPoint(rw.thr, (rw.course + 180) % 360, 3); pts.push(from, f3, td); spd.push(v0, 140 * kt, 135 * kt); alt.push(h0, Math.min(h0, elev + 520), elev); }   // short final: line up on the centreline 3 km out, no last-second turn
     else { pts.push(from, td); spd.push(v0, 135 * kt); alt.push(h0, elev); }
   } else { pts.push(from, [t.lat, t.lon]); spd.push(v0, 135 * kt); alt.push(h0, elev); }
   const segs = [];
@@ -255,7 +256,7 @@ function makePlan(d) {
   }
   // learned correction (eta.js): shifts the arrival time and gives an 80% range; the path geometry stays the physics plan
   const ml = FT.etaAdjust && FT.etaAdjust(d, t, rw, T, segs.reduce((a, g) => a + g.L, 0) / 1000);
-  return {segs, T, Tadj: ml ? ml.T : T, lo: ml ? ml.lo : null, hi: ml ? ml.hi : null, ml: !!ml, rwy: rw && rw.id, byWind: rw && rw.byWind, gen: FT.metarGen, td: pts[pts.length - 1]};
+  return {segs, T, course: rw ? rw.course : pts.length > 1 ? bearing(pts[pts.length - 2], pts[pts.length - 1]) : d.track, Tadj: ml ? ml.T : T, lo: ml ? ml.lo : null, hi: ml ? ml.hi : null, ml: !!ml, rwy: rw && rw.id, byWind: rw && rw.byWind, gen: FT.metarGen, td: pts[pts.length - 1]};
 }
 FT.estimate = (d, now) => {
   if (!d._plan || d._plan.gen !== FT.metarGen) d._plan = makePlan(d);
@@ -263,15 +264,24 @@ FT.estimate = (d, now) => {
   if (!P) return null;
   const dt = Math.max(0, now - d.ts), landT = d.ts + P.Tadj, k = P.T / P.Tadj;   // k < 1: model says slower than physics, path is stretched in time
   const range = {landLo: P.lo != null ? d.ts + P.lo : null, landHi: P.hi != null ? d.ts + P.hi : null, ml: P.ml};
-  if (dt >= P.Tadj) return {lat: P.td[0], lon: P.td[1], alt: null, ground: true, gs: 0, track: P.segs[P.segs.length - 1] ? bearing(P.segs.at(-1).a, P.segs.at(-1).z) : d.track,
-    vr: 0, landT, silentFor: dt, phase: 'landed', rwy: P.rwy, byWind: P.byWind, ...range};
+  if (dt >= P.Tadj) {
+    // touchdown -> rollout on the runway centreline: brake from the threshold speed at 2.2 m/s2 to taxi speed, then stop. Speed and position
+    // continue smoothly from the last approach point (no instant stop, no heading flip).
+    const lg = P.segs[P.segs.length - 1], vT = lg ? (lg.va + lg.b * lg.L) * k : 62, since = dt - P.Tadj, A = 2.2, vTaxi = Math.min(6, vT), t1 = (vT - vTaxi) / A, t2 = vTaxi / 0.7;
+    let v, s;
+    if (since < t1) { v = vT - A * since; s = vT * since - A * since * since / 2; }
+    else if (since < t1 + t2) { const u = since - t1; v = vTaxi - 0.7 * u; s = vT * t1 - A * t1 * t1 / 2 + vTaxi * u - 0.35 * u * u; }
+    else { v = 0; s = vT * t1 - A * t1 * t1 / 2 + vTaxi * t2 - 0.35 * t2 * t2; }
+    const pos = destPoint(P.td, P.course, s / 1000);
+    return {lat: pos[0], lon: pos[1], alt: null, ground: true, gs: v / 0.514444, track: P.course, vr: 0, landT, silentFor: dt, phase: 'landed', rolling: since < t1 + t2, rwy: P.rwy, byWind: P.byWind, ...range};
+  }
   let t = dt * k;
   for (const g of P.segs) {
     if (t > g.T) { t -= g.T; continue; }
     const s = Math.min(g.L, Math.abs(g.b) < 1e-9 ? g.va * t : (g.va / g.b) * (Math.exp(g.b * t) - 1)), f = s / g.L;
     const pos = gcInterp(g.a, g.z, f);
     return {lat: pos[0], lon: pos[1], alt: Math.round(g.h0 + (g.h1 - g.h0) * f), ground: false, gs: (g.va + g.b * s) / 0.514444 * k,
-      track: bearing(pos, g.z), vr: Math.round((g.h1 - g.h0) / (g.T / 60) * k), landT, silentFor: dt, phase: g.final ? 'final' : 'enroute', rwy: P.rwy, byWind: P.byWind, ...range};
+      track: g.L * (1 - f) > 150 ? bearing(pos, g.z) : bearing(g.a, g.z), vr: Math.round((g.h1 - g.h0) / (g.T / 60) * k), landT, silentFor: dt, phase: g.final ? 'final' : 'enroute', rwy: P.rwy, byWind: P.byWind, ...range};
   }
   return null;
 };
@@ -316,7 +326,7 @@ FT.keepGhost = (p, now) => {                       // called for aircraft with n
   if (p.est) {
     const e = p.dv && p.dv.est;
     if (!e) return now - d.ts < 200;               // estimate failed to start: don't leave a frozen plane behind
-    return !(e.ground && now - e.landT > 150) && now - d.ts < 2400;
+    return !(e.ground && now - e.landT > 120) && now - d.ts < 2400;
   }
   if (d.ground || d.alt == null || !(d.gs > 80) || d.rv === false) return false;
   const known = d.d && FT.apt(d.d), t = known && known.lat != null ? known : FT.inferDest(d);

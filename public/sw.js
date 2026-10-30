@@ -1,13 +1,13 @@
 // Cache-first for libraries, models and map tiles so repeat visits open instantly.
 // Pages are network-first (cache only as offline fallback); live flight data (/api) is never cached.
-const LIB = 'ft-lib-v3', TILES = 'ft-tiles-v1', PAGES = 'br-pages-v17', MAX_TILES = 4000;
-const SHELL = ['./', 'map', '3d', 'globe', 'share', 'live', 'config.js', 'shared.js', 'shared-extra.js', 'eta.js', 'fir.json', 'app.css', 'airports.json', 'manifest.webmanifest',
+const LIB = 'ft-lib-v4', TILES = 'ft-tiles-v1', PAGES = 'br-pages-v21', MAX_TILES = 4000;
+const SHELL = ['./', 'map', '3d', 'globe', 'share', 'live', 'config.js', 'shared.js', 'shared-extra.js', 'near.js', 'slm.js', 'eta.js', 'fir.json', 'app.css', 'airports.json', 'manifest.webmanifest',
   'icons/icon-192.png', 'icons/icon-512.png', 'icons/favicon-32.png', 'icons/mark.svg'];
 
 self.addEventListener('install', e => {
   e.waitUntil(caches.open(LIB).then(c => c.addAll([
-    'https://cdnjs.cloudflare.com/ajax/libs/leaflet/1.9.4/leaflet.min.css',
-    'https://cdnjs.cloudflare.com/ajax/libs/leaflet/1.9.4/leaflet.min.js',
+    'https://cdn.jsdelivr.net/npm/maplibre-gl@5.24.0/dist/maplibre-gl.css',
+    'https://cdn.jsdelivr.net/npm/maplibre-gl@5.24.0/dist/maplibre-gl.js',
     'https://cdn.jsdelivr.net/npm/cesium@1.121.0/Build/Cesium/Cesium.js',
     'https://cdn.jsdelivr.net/npm/cesium@1.121.0/Build/Cesium/Widgets/widgets.css',
     'models/airliner.glb',
