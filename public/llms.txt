@@ -1,0 +1,72 @@
+# BlackRhino
+
+> BlackRhino (https://blackrhino.in) is a free, educational live flight radar for India. It shows every aircraft over Indian airspace on a 2D map and a 3D map, with airport pages, a "Near me" view of the aircraft above you, and search in plain words. No sign-up, no ads. Not for navigation. Not-for-profit; commercial use is not permitted.
+
+## Key facts
+
+- What it is: BlackRhino (blackrhino.in) is a free live flight radar for India. It shows every aircraft over Indian airspace on a 2D map and a 3D map, with altitude, speed, route and airline where known.
+- Who it is for: People curious about flights: plane spotters, students, travellers following a flight, and anyone who wants to know which plane is above them.
+- Cost and purpose: It is free, with no sign-up, no ads and no subscription. It is an educational, not-for-profit project. Commercial use of the site or its data is not permitted.
+- Where the data comes from: Aircraft positions come from community ADS-B receiver networks (adsb.fi, adsb.lol and OpenSky). Registration, type and route come from public databases such as adsbdb. Maps come from OpenStreetMap-based tiles (OpenFreeMap), satellite imagery from Esri, terrain from open elevation data and clouds from EUMETSAT. See the credits page.
+- How fresh it is: Positions refresh about every 15 seconds. Between updates the position is estimated from speed and heading. Near airports, where receivers often lose the signal, landing positions are modelled and marked as estimates.
+- Features: Live 2D radar map; tilted 3D map and a 3D India view with terrain, sun and live satellite clouds; airport pages with live aircraft nearby; Near me, which shows which aircraft is above you using your device location, kept in your browser; search in plain words such as "hyd to blr" or "indigo above 30k ft", handled by a small language model that runs in your browser; and Share my flight, which records your phone GPS on board and lets family follow the flight.
+- Privacy: No accounts, no cookies, no ads and no analytics. Your location for Near me never leaves your browser. Details are on the privacy page.
+- Limits: Not for navigation, flying or safety decisions. Positions can be late, missing or wrong. Military-flagged and blocked aircraft are not shown. BlackRhino is not affiliated with any airline, airport or data provider.
+- Open source: The code is open source under the MIT licence: https://github.com/themonkkey/blackrhino
+
+## Main pages
+
+- [Live flight radar map of India](https://blackrhino.in/map): every aircraft with altitude, speed and route; flight search; airport boards; tilt to 3D.
+- [3D India flight tracker](https://blackrhino.in/3d): terrain, sun, live satellite clouds, chase and cockpit views.
+- [Airports](https://blackrhino.in/airports): live aircraft near 41 major Indian airports, with runways and facts.
+- [About](https://blackrhino.in/about): what BlackRhino is, data sources, privacy and limits.
+- [Data credits](https://blackrhino.in/credits): the community networks and open datasets used.
+- [Privacy](https://blackrhino.in/privacy) and [Terms](https://blackrhino.in/terms).
+
+## Airport pages
+
+- [Ahmedabad (AMD) live flights](https://blackrhino.in/airport/amd)
+- [Amritsar (ATQ) live flights](https://blackrhino.in/airport/atq)
+- [Bengaluru (BLR) live flights](https://blackrhino.in/airport/blr)
+- [Bhopal (BHO) live flights](https://blackrhino.in/airport/bho)
+- [Bhubaneswar (BBI) live flights](https://blackrhino.in/airport/bbi)
+- [Calicut (CCJ) live flights](https://blackrhino.in/airport/ccj)
+- [Chandigarh (IXC) live flights](https://blackrhino.in/airport/ixc)
+- [Chennai (MAA) live flights](https://blackrhino.in/airport/maa)
+- [Coimbatore (CJB) live flights](https://blackrhino.in/airport/cjb)
+- [Gautam Buddha Nagar (DXN) live flights](https://blackrhino.in/airport/dxn)
+- [Guwahati (GAU) live flights](https://blackrhino.in/airport/gau)
+- [Halwara (HWR) live flights](https://blackrhino.in/airport/hwr)
+- [Hisar (HSS) live flights](https://blackrhino.in/airport/hss)
+- [Hyderabad (HYD) live flights](https://blackrhino.in/airport/hyd)
+- [Imphal (IMF) live flights](https://blackrhino.in/airport/imf)
+- [Indore (IDR) live flights](https://blackrhino.in/airport/idr)
+- [Jaipur (JAI) live flights](https://blackrhino.in/airport/jai)
+- [Kakadi (SAG) live flights](https://blackrhino.in/airport/sag)
+- [Kochi (COK) live flights](https://blackrhino.in/airport/cok)
+- [Kolkata (CCU) live flights](https://blackrhino.in/airport/ccu)
+- [Lucknow (LKO) live flights](https://blackrhino.in/airport/lko)
+- [Mangaluru (IXE) live flights](https://blackrhino.in/airport/ixe)
+- [Mopa (GOX) live flights](https://blackrhino.in/airport/gox)
+- [Mumbai (BOM) live flights](https://blackrhino.in/airport/bom)
+- [Nagpur (NAG) live flights](https://blackrhino.in/airport/nag)
+- [Nashik (ISK) live flights](https://blackrhino.in/airport/isk)
+- [Navi Mumbai (NMI) live flights](https://blackrhino.in/airport/nmi)
+- [New Delhi (DEL) live flights](https://blackrhino.in/airport/del)
+- [Port Blair (IXZ) live flights](https://blackrhino.in/airport/ixz)
+- [Pune (PNQ) live flights](https://blackrhino.in/airport/pnq)
+- [Rajkot (HSR) live flights](https://blackrhino.in/airport/hsr)
+- [Siliguri (IXB) live flights](https://blackrhino.in/airport/ixb)
+- [Srinagar (SXR) live flights](https://blackrhino.in/airport/sxr)
+- [Surat (STV) live flights](https://blackrhino.in/airport/stv)
+- [Thiruvananthapuram (TRV) live flights](https://blackrhino.in/airport/trv)
+- [Tiruchirappalli (TRZ) live flights](https://blackrhino.in/airport/trz)
+- [Tirupati (TIR) live flights](https://blackrhino.in/airport/tir)
+- [Vadodara (BDQ) live flights](https://blackrhino.in/airport/bdq)
+- [Varanasi (VNS) live flights](https://blackrhino.in/airport/vns)
+- [Vasco da Gama (GOI) live flights](https://blackrhino.in/airport/goi)
+- [Vijayawada (VGA) live flights](https://blackrhino.in/airport/vga)
+
+## Source code
+
+- https://github.com/themonkkey/blackrhino (MIT licence)

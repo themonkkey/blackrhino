@@ -258,6 +258,29 @@ function makePlan(d) {
   const ml = FT.etaAdjust && FT.etaAdjust(d, t, rw, T, segs.reduce((a, g) => a + g.L, 0) / 1000);
   return {segs, T, course: rw ? rw.course : pts.length > 1 ? bearing(pts[pts.length - 2], pts[pts.length - 1]) : d.track, Tadj: ml ? ml.T : T, lo: ml ? ml.lo : null, hi: ml ? ml.hi : null, ml: !!ml, rwy: rw && rw.id, byWind: rw && rw.byWind, gen: FT.metarGen, td: pts[pts.length - 1]};
 }
+// Landing-aware dead reckoning. Between receiver fixes a plane keeps moving, but an arrival must not carry on at approach speed
+// past the runway: once its height reaches the ground it brakes (2.2 m/s2, the same model as the estimated rollout), crawls and stops.
+// elevFt = ground elevation under it (feet) when known; without it only the ground-speed case is handled.
+// Returns metres travelled along the track after dt seconds, the speed it has by then (m/s) and whether it has touched down.
+FT.advance = (d, dt, elevFt, wasAir) => {
+  const kt = 0.514444, v0 = Math.max(d.gs || 0, 0) * kt, A = 2.2;
+  const roll = (v, t) => {                       // distance and speed while braking from v for t seconds, then a short crawl, then stopped
+    const vT = Math.min(v, 6), t1 = (v - vT) / A;
+    if (t <= t1) return [v * t - A * t * t / 2, v - A * t];
+    const c = Math.min(t - t1, 5), s1 = v * t1 - A * t1 * t1 / 2;
+    return [s1 + vT * c * 0.7, t - t1 < 5 ? vT * (1 - (t - t1) / 5) : 0];
+  };
+  if (d.ground) {
+    if (v0 > 20 && wasAir) { const [s, v] = roll(v0, Math.min(dt, 60)); return {s, v, landed: true}; }   // rolling out after touchdown
+    return {s: v0 * Math.min(dt, d.gs > 40 ? 8 : 12), v: v0, landed: false};                            // taxiing / take-off roll
+  }
+  const vr = d.vr || 0, agl = elevFt != null && d.alt != null ? d.alt - elevFt : null;
+  let tT = Infinity;
+  if (agl != null && agl < 3500) { if (vr < -150) tT = Math.max(0, Math.min(agl / (-vr / 60), 90)); else if (agl < 60) tT = 1; }
+  if (dt <= tT) return {s: v0 * dt, v: v0, landed: false};
+  const [s2, v] = roll(v0 * 0.96, dt - tT);       // touchdown speed is a little under the approach speed
+  return {s: v0 * tT + s2, v, landed: true};
+};
 FT.estimate = (d, now) => {
   if (!d._plan || d._plan.gen !== FT.metarGen) d._plan = makePlan(d);
   const P = d._plan;

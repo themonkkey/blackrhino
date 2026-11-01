@@ -1,5 +1,5 @@
 <!doctype html>
-<html lang="en">
+<html lang="en-IN">
 <head>
 <meta charset="utf-8">
 <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
@@ -11,15 +11,15 @@
 <link rel="manifest" href="manifest.webmanifest">
 <link rel="icon" type="image/png" href="icons/favicon-32.png">
 <link rel="apple-touch-icon" href="icons/apple-touch-icon.png">
-<title>blackrhino · live flight radar for India</title>
-<meta name="description" content="Every aircraft over India on a live 2D radar: flight cards, airport boards, filters, squawk alerts and a 3-hour replay. Free and open source.">
+<title>Live Flight Radar Map of India | BlackRhino</title>
+<meta name="description" content="Live flight radar map of India: every aircraft with altitude, speed and route, flight search, airport boards and a 3D tilt view. Free, no sign-up.">
 <meta property="og:type" content="website"><meta property="og:site_name" content="blackrhino">
-<meta property="og:title" content="blackrhino · live flight radar for India"><meta property="og:description" content="Every aircraft over India on a live 2D radar: flight cards, airport boards, filters, squawk alerts and a 3-hour replay. Free and open source.">
+<meta property="og:title" content="Live Flight Radar Map of India | BlackRhino"><meta property="og:description" content="Live flight radar map of India: every aircraft with altitude, speed and route, flight search, airport boards and a 3D tilt view. Free, no sign-up.">
 <meta property="og:image" content="https://blackrhino.in/og.jpg"><meta property="og:image:width" content="1200"><meta property="og:image:height" content="630">
 <meta name="twitter:card" content="summary_large_image"><meta name="twitter:image" content="https://blackrhino.in/og.jpg">
 <link rel="canonical" href="https://blackrhino.in/map">
 <link rel="preconnect" href="https://tiles.openfreemap.org" crossorigin><link rel="preconnect" href="https://cdn.jsdelivr.net" crossorigin>
-<script>window.__first = fetch('/api/flights').then(r => r.json()).catch(() => null);
+<script>window.__first = fetch('/api/flights', {signal: AbortSignal.timeout ? AbortSignal.timeout(20000) : undefined}).then(r => { if (!r.ok) throw 0; return r.json(); }).catch(() => null);
 window.__style = fetch('https://tiles.openfreemap.org/styles/dark').then(r => r.json());
 if ('serviceWorker' in navigator) navigator.serviceWorker.register('sw.js');</script>
 <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/maplibre-gl@5.24.0/dist/maplibre-gl.css" integrity="sha384-uTttxo/aOKbdE5RlD/SPzSDoDmNvGlUYPjONi2MN/b7c9HPSvW07OIuyP7uL6jxK" crossorigin="anonymous">
@@ -28,6 +28,7 @@ if ('serviceWorker' in navigator) navigator.serviceWorker.register('sw.js');</sc
 <script src="shared.js" defer></script>
 <script src="eta.js" defer></script>
 <script src="shared-extra.js" defer></script>
+<script type="importmap">{"integrity": {"https://cdn.jsdelivr.net/npm/onnxruntime-web@1.20.1/dist/ort-wasm-simd-threaded.mjs": "sha384-SyfqCcawqO3udRV2twBwYuuR4Wh7Nj/yfAxyfN6UltDOh5VTrJH4aT9HfEvthS02"}}</script>
 <script src="near.js" defer></script>
 <script src="slm.js" defer></script>
 <style>#map{position:absolute;inset:0}#fx{position:absolute;inset:0;z-index:400;pointer-events:none}</style>
@@ -36,6 +37,7 @@ if ('serviceWorker' in navigator) navigator.serviceWorker.register('sw.js');</sc
 <link rel="stylesheet" href="app.css">
 </head>
 <body>
+<h1 class="sr">Live flight radar map of India</h1><p class="sr">Every aircraft over India on a live map, with altitude, speed and route. Search a flight or ask in plain words, tilt the map to 3D, or see the plane above you with Near me. Browse <a href="/airports">live flights at Indian airports</a> or open the <a href="/3d">3D India flight tracker</a>.</p>
 <div id="map"></div><canvas id="fx"></canvas>
 <div id="top" class="hud">
   <a class="brand" href="/" title="blackrhino home"><svg viewBox="0 0 64 64"><path d="M5 31C5 23 11 18 20 18L32 18C35 18 37.5 18.8 39.5 20.5L40 15.8C40.3 14 42.6 13.8 43 15.6L43.6 21.6C46.5 23.5 48.5 26.5 50 29.5L51.3 26.4L53.2 31C55.5 27.5 58.2 22.5 61.5 19C61 25.5 59.5 31.5 57.5 35.5C59.2 37.5 59.7 40.5 58.8 43.2C56.3 45.7 51.2 45.8 47.6 44.2L44.6 45.4L44 54L37.4 54L37 48L21 48L20.5 54L13.8 54L13.2 46.2C8 43.8 5 38.2 5 31Z"/></svg>blackrhino<span class="br-dot"></span></a>
@@ -205,22 +207,45 @@ async function poll(first) {
   inflight = true;
   const c = map.getCenter();
   try {
-    const j = first || await fetch('/api/flights', {headers: {'X-Center': `${c.lat.toFixed(1)},${c.lng.toFixed(1)}`}}).then(r => r.json());
+    const j = first || await fetch('/api/flights', {signal: AbortSignal.timeout ? AbortSignal.timeout(15000) : undefined}).then(r => { if (!r.ok) throw 0; return r.json(); });
     if (!j) throw 0;
-    serverOffset = j.now - Date.now() / 1000;
-    lastFetch = Date.now();
+    if (!j.__stale) { serverOffset = j.now - Date.now() / 1000; lastFetch = Date.now(); connOk(); saveLast(j); }
+    else connStale(j.now);
     FT.ingest(j);
     ingest(j.ac);
-    record(j);
+    if (!j.__stale) record(j);
     if (wantSel && planes.has(wantSel)) { const h = wantSel; wantSel = null; select(h); }
     const m = j.meta;
     document.getElementById('src').innerHTML =
       `${m.adsbfi ? `adsb.fi: ${m.adsbfi}${m.opensky ? `<br>OpenSky: ${m.opensky}` : ''}` : `OpenSky: ${m.opensky}${m.opensky_age != null ? ` (${m.opensky_age}s ago)` : ''}${m.quota ? ` · quota ${m.quota}` : ''}`}<br>adsb.lol: ${m.adsblol}<br>routes: ${m.routes || '-'} · ${FT.lookupStatus()}<br>positions between fixes are dead-reckoned`;
   } catch (e) {
     document.getElementById('src').textContent = 'server unreachable, retrying…';
+    connFail();
   }
   inflight = false;
 }
+
+// ---- connection status: never leave an empty map unexplained; keep the last good picture on screen
+const connEl = document.createElement('div'); connEl.id = 'conn'; connEl.setAttribute('role', 'status'); document.body.appendChild(connEl);
+let connFails = 0, connTimer = null;
+const connShow = t => { connEl.textContent = t; connEl.classList.toggle('on', !!t); };
+function connOk() { connFails = 0; clearTimeout(connTimer); connTimer = null; connShow(''); }
+let staleTs = 0;
+function connStale(ts) { staleTs = ts; const mins = Math.max(1, Math.round((Date.now() / 1000 - ts) / 60)); connShow(`Showing flights from ${mins} min ago, reconnecting\u2026`); }
+function connFail() {
+  connFails++;
+  if (!lastFetch && staleTs) { const mins = Math.max(1, Math.round((Date.now() / 1000 - staleTs) / 60)); connShow(`Showing flights from ${mins} min ago. ${navigator.onLine === false ? 'Offline' : "Can't reach live data"}, retrying\u2026`); }
+  else if (!lastFetch) connShow(navigator.onLine === false ? "You're offline, waiting for a connection\u2026" : connFails > 1 ? "Can't reach live data, retrying\u2026" : 'Connecting to live data\u2026');
+  else if (connFails > 1) connShow("Live data is slow, retrying\u2026");
+  clearTimeout(connTimer); connTimer = setTimeout(() => poll(), Math.min(2000 * connFails, 10000));   // retry soon, do not wait for the next 15 s tick
+}
+let lastSaved = 0;
+function saveLast(j) { if (Date.now() - lastSaved < 45e3) return; lastSaved = Date.now(); try { localStorage.setItem('br-last-flights', JSON.stringify({t: Date.now(), j})); } catch (e) {} }
+function loadLast() { try { const o = JSON.parse(localStorage.getItem('br-last-flights')); return o && Date.now() - o.t < 10 * 60e3 && o.j && o.j.ac ? Object.assign(o.j, {__stale: true}) : null; } catch (e) { return null; } }
+addEventListener('online', () => { connShow('Back online, reconnecting\u2026'); poll(); });
+addEventListener('offline', () => { if (!lastFetch) connShow("You're offline, waiting for a connection\u2026"); });
+// nothing after 2 s (slow network, cold server): paint the last picture we saw, clearly marked, instead of an empty map
+setTimeout(() => { if (!lastFetch && !planes.size) { const c = loadLast(); if (c) { inflight = false; poll(c); } else if (!connEl.textContent) connShow('Connecting to live data\u2026'); } }, 2000);
 
 function ingest(list, partial) {
   const seen = new Set(), t = nowS();
@@ -264,6 +289,8 @@ function draw() {
   ctx.clearRect(0, 0, W, H);
   drawAirports(z);
   if (me) drawMe();
+  const qf = !replay && FT.qf, qfOn = qf && qf.hexes.size <= 30;
+  if (qf && qf.c.from && qf.c.to) drawQFRoute(qf.c);
   const sel0 = !replay && selected && planes.get(selected);
   if (sel0) drawRoute(sel0);
   let inView = 0;
@@ -271,7 +298,16 @@ function draw() {
     p.dv = p.est ? FT.virtual(p.d, t) : null;   // silent near destination: modelled approach
     const d = p.dv || p.d;
     const dt = Math.min(Math.max(t - d.ts, 0), 180);   // cap extrapolation at 3 min
-    let [lat, lon] = d.ground || d.gs < 30 ? [d.lat, d.lon] : project(d.lat, d.lon, d.track, d.gs, dt);
+    if (!d.ground) p.wasAir = true; else if (d.gs < 20) p.wasAir = false;
+    let lat = d.lat, lon = d.lon;
+    if (d.ground ? p.wasAir && d.gs > 20 : d.gs >= 30) {   // landing-aware: an arrival brakes after touchdown instead of sliding past the runway
+      if (!d.ground && d.alt != null && d.alt < 4000 && (!p.apT || t - p.apT > 5)) {   // ground elevation from the airport it is over (cached, low planes only)
+        p.apT = t; p.apElev = null; let bd = 8;
+        for (const a of FT.airports) { if (a.lat == null || a.elev == null) continue; const k = Math.abs(a.lat - d.lat) < .15 && Math.abs(a.lon - d.lon) < .15 ? FT.km(d.lat, d.lon, a.lat, a.lon) : 99; if (k < bd) { bd = k; p.apElev = a.elev; } }
+      }
+      const kin = FT.advance(d, dt, d.alt != null && d.alt < 4000 ? p.apElev : null, p.wasAir);
+      if (kin.s > 0) [lat, lon] = project(d.lat, d.lon, d.track, 1 / 0.514444, kin.s);
+    }
     if (p.err) {   // ease correction over 2s
       const k = Math.max(0, 1 - (performance.now() - p.err.t) / 2000);
       lat += p.err.lat * k; lon += p.err.lon * k;
@@ -298,11 +334,23 @@ function draw() {
   // planes on top of trails; selected last
   const sel = !replay && selected && planes.get(selected);
   const ap = FT.aptSel;
+  if (qfOn) for (const p of view.values()) if (p.vis && qf.hexes.has(p.d.hex) && p !== sel) {   // search results: a warm halo so they read at a glance
+    const g = ctx.createRadialGradient(p.x, p.y, 2, p.x, p.y, sz * 1.25); g.addColorStop(0, 'rgba(255,200,100,.42)'); g.addColorStop(1, 'rgba(255,200,100,0)');
+    ctx.fillStyle = g; ctx.beginPath(); ctx.arc(p.x, p.y, sz * 1.25, 0, 7); ctx.fill();
+  }
   for (const p of view.values()) if (p.vis && p !== sel) drawPlane(p, sz, ap && (p.d.o === ap || p.d.d === ap) && p.d.rv !== false ? 'apt' : false);
   if (sel && sel.vis) {   // selected: soft sky halo, then the plane in white
     ctx.beginPath(); ctx.arc(sel.x, sel.y, sz * .95, 0, 7); ctx.fillStyle = 'rgba(124,200,255,.16)'; ctx.fill();
     ctx.lineWidth = 1; ctx.strokeStyle = 'rgba(124,200,255,.55)'; ctx.stroke();
     drawPlane(sel, sz + 6, true);
+  }
+  if (qfOn) {   // callsign + altitude next to every result
+    ctx.font = '600 11px "JetBrains Mono",monospace'; ctx.textAlign = 'left';
+    for (const p of view.values()) if (p.vis && qf.hexes.has(p.d.hex)) {
+      const t = `${p.d.flight || p.d.hex}${p.d.alt != null && !p.d.ground ? ' \u00b7 ' + Math.round(p.d.alt / 100) * 100 + ' ft' : ''}`, w = ctx.measureText(t).width + 12, x = Math.min(p.x + sz * .6, W - w - 4), y = p.y - 9;
+      ctx.fillStyle = 'rgba(8,14,24,.82)'; ctx.beginPath(); ctx.roundRect(x, y, w, 18, 9); ctx.fill(); ctx.strokeStyle = 'rgba(255,200,100,.6)'; ctx.lineWidth = 1; ctx.stroke();
+      ctx.fillStyle = '#ffe2a8'; ctx.fillText(t, x + 6, y + 13);
+    }
   }
   if (replay && z >= 8) drawLabels(view);
   document.getElementById('nView').textContent = inView;
@@ -364,7 +412,20 @@ const goTo = (hex, z) => { const p = planes.get(hex); if (p) { focus([p.lat ?? p
 document.getElementById('nearTop').addEventListener('click', e => { const r = e.target.closest('.ntop'); if (r) goTo(r.dataset.hex, 11); });
 nearList.addEventListener('click', e => { const r = e.target.closest('.nrow[data-hex]'); if (r) goTo(r.dataset.hex, 10); });
 const phoneQ = matchMedia('(max-width:700px)');
-(function () { const q = document.getElementById('q'), full = q.placeholder; const fit = () => q.placeholder = phoneQ.matches ? 'Search or ask\u2026' : full; fit(); phoneQ.addEventListener('change', fit); })();
+// the smart search bar: a calm animated ring + "AI" tag, rotating example questions, and a one-time hint
+(function () {
+  const q = document.getElementById('q'), wrap = document.createElement('div'), tag = document.createElement('span'), hint = document.createElement('div');
+  wrap.className = 'qai'; q.parentNode.insertBefore(wrap, q); wrap.appendChild(q);
+  tag.className = 'qtag'; tag.innerHTML = '<svg viewBox="0 0 24 24" width="11" height="11" aria-hidden="true"><path fill="currentColor" d="M21 16v-2l-8-5V3.5a1.5 1.5 0 0 0-3 0V9l-8 5v2l8-2.5V19l-2 1.5V22l3.5-1 3.5 1v-1.5L13 19v-5.5z"/></svg> AI'; tag.setAttribute('aria-hidden', 'true'); wrap.appendChild(tag);
+  const EX = ['Ask: hyd to blr', 'Ask: indigo above 30k', 'Ask: fastest 5 planes', 'Ask: helicopters', 'Ask: air india 777'], full = 'Flight, airport, or ask in words';
+  let i = 0; q.placeholder = EX[0];
+  setInterval(() => { if (document.hidden || document.activeElement === q || q.value || q.placeholder.startsWith('Thinking') || /^(That|Didn|Could)/.test(q.placeholder)) return; i = (i + 1) % (EX.length + 1); q.placeholder = i === EX.length ? full : EX[i]; }, 3200);
+  let seen = false; try { seen = localStorage.getItem('br-ai-seen') === '1'; } catch (e) {}
+  const done = () => { hint.classList.remove('on'); seen = true; try { localStorage.setItem('br-ai-seen', '1'); } catch (e) {} };
+  hint.id = 'aiHint'; hint.innerHTML = '<b>New</b> Ask in plain words, like <i>&ldquo;hyd to blr&rdquo;</i> <button type="button" aria-label="Dismiss">&times;</button>'; document.body.appendChild(hint);
+  hint.querySelector('button').onclick = done; q.addEventListener('focus', done); q.addEventListener('keydown', e => { if (e.key === 'Enter') done(); });
+  if (!seen) setTimeout(() => { if (!seen && !FT.qf && !document.hidden) hint.classList.add('on'); }, 3500), setTimeout(() => hint.classList.remove('on'), 16000);
+})();
 nearEl.querySelector('.ttl').addEventListener('click', e => { if (!e.target.closest('#nearX') && phoneQ.matches) nearEl.classList.toggle('open'); });   // phone: the sheet is one card, tap to see all nearby
 function startNear() {
   nearEl.style.display = 'block'; nearNote.textContent = 'Finding you…';
@@ -388,6 +449,11 @@ document.getElementById('nearX').onclick = () => stopNear();
 setInterval(() => { if (me && !document.hidden) renderNear(); }, 700);
 
 // ---- airports (drawn on the same canvas, under the planes) ----
+function drawQFRoute(c) {   // faint dashed line between the two airports of a route search
+  const a = SLM.apt(c.from), b = SLM.apt(c.to); if (!a || !b) return;
+  const p = scr(a.lat, a.lon, null), q = scr(b.lat, b.lon, null);
+  ctx.save(); ctx.setLineDash([6, 7]); ctx.lineWidth = 1.5; ctx.strokeStyle = 'rgba(255,200,100,.5)'; ctx.beginPath(); ctx.moveTo(p.x, p.y); ctx.lineTo(q.x, q.y); ctx.stroke(); ctx.restore();
+}
 function drawAirports(z) {
   const showRwy = z >= 9;
   for (const a of FT.airports) {
@@ -530,6 +596,8 @@ document.getElementById('q').addEventListener('keydown', e => {
   const r = FT.search(e.target.value);
   if (r && r.hex) { const p = planes.get(r.hex); focus([p.lat ?? p.d.lat, p.lon ?? p.d.lon], 8); select(r.hex); return; }
   if (r && r.icao) { FT.openAirport(r.icao); return; }
+  const fz = window.SLM && !/\s/.test(e.target.value.trim()) && SLM.fuzzyPlace(e.target.value), fa = fz && FT.airports.find(a => a.iata === fz);   // one misspelt place: open that airport
+  if (fa) { FT.openAirport(fa.icao); return; }
   askWords(e.target);
 });
 // Ask in words: when the box is not a flight or airport, a small model that runs in this page turns it into a filter
@@ -538,14 +606,38 @@ qChip.id = 'qChip'; qChip.style.display = 'none'; qChip.title = 'Clear this filt
 document.getElementById('q').insertAdjacentElement('afterend', qChip);
 const setQF = (c, lab) => {
   if (!c) { FT.qf = null; qChip.style.display = 'none'; dirty = true; return; }
-  FT.qf = {c, lab, hexes: new Set()}; refreshQF(); qChip.style.display = ''; dirty = true;
+  FT.qf = {c, lab, hexes: new Set(), userMoved: false}; refreshQF(); qChip.style.display = ''; dirty = true; fitQF(true);
 };
 function refreshQF() {
   if (!FT.qf) return;
   const list = []; for (const p of planes.values()) if (p.d) list.push(p.d);
+  const c0 = FT.qf.c;
+  if (c0.from || c0.to) {   // routes are looked up per flight on this device: ask for the ones that could be on this route, nearest first
+    const fa = c0.from && SLM.apt(c0.from), ta = c0.to && SLM.apt(c0.to), od = fa && ta ? FT.km(fa.lat, fa.lon, ta.lat, ta.lon) : 0, cand = [];
+    for (const d of list) {
+      if (d.o || !d.flight || d.lat == null) continue;
+      if (fa && ta ? FT.km(fa.lat, fa.lon, d.lat, d.lon) + FT.km(d.lat, d.lon, ta.lat, ta.lon) > od * 1.3 + 150 : false) continue;
+      cand.push([FT.km((fa || ta).lat, (fa || ta).lon, d.lat, d.lon), d.flight]);
+    }
+    cand.sort((x, y) => x[0] - y[0]); for (const [, cs] of cand.slice(0, 80)) FT.want('r', cs, 6);
+  }
   FT.qf.hexes = new Set(SLM.run(FT.qf.c, list).map(d => d.hex));
+  if (Date.now() - (FT.qf.t0 = FT.qf.t0 || Date.now()) < 90e3) fitQF();   // results arrive over a few seconds (route lookups): keep framing them until the user takes over
   const c = FT.qf.c, routed = (c.from || c.to) ? list.filter(d => d.o && d.d).length : -1;
-  qChip.textContent = `${FT.qf.lab}: ${FT.qf.hexes.size} shown${routed >= 0 ? ` (routes known for ${routed} of ${list.length})` : ''} \u00b7 clear \u2715`; dirty = true;
+  const busy = routed >= 0 && FT.lookupStatus() !== 'up to date';
+  qChip.textContent = `${FT.qf.lab}: ${FT.qf.hexes.size} shown${busy ? ' \u00b7 looking up routes\u2026' : routed >= 0 ? ` (routes known for ${routed} of ${list.length})` : ''} \u00b7 clear \u2715`; dirty = true;
+}
+// bring the results into view so nobody has to hunt for them: fit the matching planes (and the airports of a route) once they appear, until the user moves the map
+mgl.on('movestart', e => { if (e.originalEvent && FT.qf) FT.qf.userMoved = true; });
+function fitQF(force) {
+  const q = FT.qf; if (!q || (q.userMoved && !force)) return;
+  const pts = [], add = (la, lo) => { if (la != null && lo != null) pts.push([lo, la]); };
+  for (const p of planes.values()) if (p.d && q.hexes.has(p.d.hex)) add(p.lat ?? p.d.lat, p.lon ?? p.d.lon);
+  for (const k of ['from', 'to', 'near']) { const a = q.c[k] && SLM.apt(q.c[k]); if (a) add(a.lat, a.lon); }
+  if (!pts.length || q.hexes.size > 60) return;   // a broad filter (all IndiGo) should not zoom anywhere
+  const key = q.hexes.size + '|' + pts.length; if (!force && q.fitKey === key) return; q.fitKey = key; q.fitted = Date.now();
+  const bb = pts.reduce((b, p) => b.extend(p), new maplibregl.LngLatBounds(pts[0], pts[0])), phone = innerWidth <= 700;
+  mgl.fitBounds(bb, {padding: {top: 120, bottom: phone ? 190 : 80, left: phone ? 40 : 90, right: phone ? 40 : 90}, maxZoom: pts.length === 1 ? 8 : 9, duration: 900});
 }
 qChip.onclick = () => setQF(null);
 setInterval(() => { if (!document.hidden) refreshQF(); }, 1500);

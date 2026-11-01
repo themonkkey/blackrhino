@@ -20,11 +20,15 @@
         },
         {
           "key": "Permissions-Policy",
-          "value": "geolocation=(self), camera=(), microphone=(), payment=(), usb=()"
+          "value": "geolocation=(self), accelerometer=(self), gyroscope=(self), magnetometer=(self), camera=(), microphone=(), payment=(), usb=(), interest-cohort=()"
         },
         {
           "key": "Strict-Transport-Security",
           "value": "max-age=63072000"
+        },
+        {
+          "key": "Cross-Origin-Opener-Policy",
+          "value": "same-origin"
         },
         {
           "key": "X-Frame-Options",

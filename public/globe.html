@@ -1,5 +1,5 @@
 <!doctype html>
-<html lang="en">
+<html lang="en-IN">
 <head>
 <meta charset="utf-8">
 <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
@@ -11,10 +11,10 @@
 <link rel="manifest" href="manifest.webmanifest">
 <link rel="icon" type="image/png" href="icons/favicon-32.png">
 <link rel="apple-touch-icon" href="icons/apple-touch-icon.png">
-<title>blackrhino · live globe</title>
-<meta name="description" content="Live flights over India on a 3D globe with day and night lighting.">
+<title>Live Flight Tracker Globe: Aircraft Over India | BlackRhino</title>
+<meta name="description" content="A 3D globe of live aircraft over India with terrain and imagery. Free live flight tracker from community ADS-B data.">
 <meta property="og:type" content="website"><meta property="og:site_name" content="blackrhino">
-<meta property="og:title" content="blackrhino · live globe"><meta property="og:description" content="Live flights over India on a 3D globe with day and night lighting.">
+<meta property="og:title" content="Live Flight Tracker Globe: Aircraft Over India | BlackRhino"><meta property="og:description" content="A 3D globe of live aircraft over India with terrain and imagery. Free live flight tracker from community ADS-B data.">
 <meta property="og:image" content="https://blackrhino.in/og.jpg"><meta property="og:image:width" content="1200"><meta property="og:image:height" content="630">
 <meta name="twitter:card" content="summary_large_image"><meta name="twitter:image" content="https://blackrhino.in/og.jpg">
 <link rel="canonical" href="https://blackrhino.in/globe">
@@ -47,6 +47,7 @@ body.tracking.has-flight #watchBar{display:none}
 <link rel="stylesheet" href="app.css">
 </head>
 <body>
+<h1 class="sr">Live flight tracker globe</h1><p class="sr">Aircraft over India on a 3D globe. For the full radar see the <a href="/map">live flight radar map</a>.</p>
 <div id="cesium"></div>
 <div id="top" class="hud">
   <a class="brand" href="/" title="blackrhino home"><svg viewBox="0 0 64 64"><path d="M5 31C5 23 11 18 20 18L32 18C35 18 37.5 18.8 39.5 20.5L40 15.8C40.3 14 42.6 13.8 43 15.6L43.6 21.6C46.5 23.5 48.5 26.5 50 29.5L51.3 26.4L53.2 31C55.5 27.5 58.2 22.5 61.5 19C61 25.5 59.5 31.5 57.5 35.5C59.2 37.5 59.7 40.5 58.8 43.2C56.3 45.7 51.2 45.8 47.6 44.2L44.6 45.4L44 54L37.4 54L37 48L21 48L20.5 54L13.8 54L13.2 46.2C8 43.8 5 38.2 5 31Z"/></svg>blackrhino<span class="br-dot"></span></a>
@@ -231,7 +232,7 @@ async function poll(first) {
   inflight = true;
   const c = C.Cartographic.fromCartesian(viewer.camera.positionWC);
   try {
-    const j = first || await fetch('/api/flights', {headers: {'X-Center': `${C.Math.toDegrees(c.latitude).toFixed(3)},${C.Math.toDegrees(c.longitude).toFixed(3)}`}}).then(r => r.json());
+    const j = first || await fetch('/api/flights').then(r => r.json());
     if (!j) throw 0;
     serverOffset = j.now - Date.now() / 1000; lastFetch = Date.now();
     FT.ingest(j);

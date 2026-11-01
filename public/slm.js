@@ -12,10 +12,10 @@ window.SLM = (() => {
   const NEAR_KM = 100;
   let sess = null, loading = null, itos = null, stoi = null;
 
-  function script(src) { return new Promise((ok, no) => { const s = document.createElement('script'); s.src = src; s.onload = ok; s.onerror = () => no(new Error('load ' + src)); document.head.appendChild(s); }); }
+  function script(src, sri) { return new Promise((ok, no) => { const s = document.createElement('script'); s.src = src; if (sri) { s.integrity = sri; s.crossOrigin = 'anonymous'; } s.onload = ok; s.onerror = () => no(new Error('load ' + src)); document.head.appendChild(s); }); }
   function load() {
     return loading || (loading = (async () => {
-      if (!window.ort) await script(ORT + 'ort.min.js');
+      if (!window.ort) await script(ORT + 'ort.min.js', 'sha384-RPL/K8tc0JVaNWsunkEmCzLeieefvFX2UCRLKLmLVChCI6P+CTKhzqF7VIeCc3Zp');
       ort.env.wasm.wasmPaths = ORT; ort.env.wasm.numThreads = 1; ort.env.wasm.proxy = false;
       const [tk, enc, dec] = await Promise.all([fetch('/slm/tokenizer.json').then(r => r.json()), ort.InferenceSession.create('/slm/enc.q.onnx'), ort.InferenceSession.create('/slm/dec.q.onnx')]);
       itos = tk.itos; stoi = Object.fromEntries(itos.map((c, i) => [c, i]));
@@ -93,12 +93,53 @@ window.SLM = (() => {
     return p.join(' ');
   }
 
+  /* Plain "hyd to blr", "from delhi to mumbai flights": no model needed, and it never gets it wrong. Both sides must be airports we know. */
+  const ALIAS = {bangalore: 'BLR', bombay: 'BOM', calcutta: 'CCU', madras: 'MAA', baroda: 'BDQ', poona: 'PNQ', banaras: 'VNS', trivandrum: 'TRV', cochin: 'COK', gauhati: 'GAU', mangalore: 'IXE', vizag: 'VTZ', 'new delhi': 'DEL', delhi: 'DEL', goa: 'GOI'};
+  /* spelling-tolerant place lookup: Damerau-Levenshtein against every city and alias; accepts a close, unambiguous match ("hydrabad", "bengluru", "dehli") */
+  function dl(a, b) {
+    const d = Array.from({length: a.length + 1}, (_, i) => [i, ...Array(b.length).fill(0)]); for (let j = 1; j <= b.length; j++) d[0][j] = j;
+    for (let i = 1; i <= a.length; i++) for (let j = 1; j <= b.length; j++) {
+      d[i][j] = Math.min(d[i - 1][j] + 1, d[i][j - 1] + 1, d[i - 1][j - 1] + (a[i - 1] !== b[j - 1]));
+      if (i > 1 && j > 1 && a[i - 1] === b[j - 2] && a[i - 2] === b[j - 1]) d[i][j] = Math.min(d[i][j], d[i - 2][j - 2] + 1);
+    }
+    return d[a.length][b.length];
+  }
+  let NAMES = null;
+  function fuzzyPlace(t) {
+    t = t.trim().toLowerCase(); if (t.length < 4) return null;
+    if (!NAMES) {   // one entry per spoken name; a city with two airports means its largest
+      const m = {...ALIAS}, big = {}; for (const a of FT.airports) { const n = (a.city || '').toLowerCase(); if (a.iata && n && (!(n in m) || (a.type === 'large' && !big[n]))) { m[n] = a.iata; if (a.type === 'large') big[n] = 1; } }
+      NAMES = Object.entries(m);
+    }
+    const lim = Math.max(1, Math.floor(t.length / 4)); let best = null, bd = 99, tie = false;
+    for (const [n, iata] of NAMES) {
+      if (Math.abs(n.length - t.length) > lim) continue;
+      const d = dl(t, n); if (d > lim) continue;
+      if (d < bd) { bd = d; best = iata; tie = false; } else if (d === bd && iata !== best) tie = true;
+    }
+    return best && !tie ? best : null;
+  }
+  function place(t) {
+    t = t.trim().toLowerCase(); if (!t || t.split(/\s+/).length > 3) return null;
+    if (ALIAS[t]) return ALIAS[t];
+    const a = FT.airports.find(a => (a.iata || '').toLowerCase() === t || (a.icao || '').toLowerCase() === t) || FT.airports.find(a => (a.city || '').toLowerCase() === t) || FT.airports.find(a => (a.city || '').toLowerCase().startsWith(t) && t.length >= 4);
+    return a && a.iata || fuzzyPlace(t);
+  }
+  function route(q) {
+    const m = /^\s*(?:(?:show|find|list|all|any|me)\s+)*(?:(?:flights?|planes?|aircraft)\s+)?(?:from\s+)?(.+?)\s*(?:\bto\b|->|\u2192|\u2013|\s-\s)\s*(.+?)(?:\s+(?:flights?|planes?|aircraft|now|live|today))*\s*$/i.exec(q);
+    const f = m && place(m[1]), t = m && place(m[2]);
+    return f && t && f !== t ? {from: f, to: t} : null;
+  }
+
   /* ask(q): {c, label, conf} when understood, {none:true} for "not a flight question", {unsure:true} when the model was not confident */
   async function ask(q) {
+    q = String(q).slice(0, 120);   // bound the work a pasted wall of text can cause
+    const rc = route(q); if (rc) return {c: rc, label: label(rc), conf: 1};
     const r = await translate(q), c = parse(r.text);
     if (!c || r.conf < GATE) return {unsure: true, conf: r.conf, text: r.text};
     if (c === 'none') return {none: true, conf: r.conf};
+    if (c && c !== 'all') for (const k of ['from', 'to', 'near']) if (c[k] === 'RAJ') c[k] = 'HSR';   // Rajkot's flights use the new Hirasar airport
     return c === 'all' ? {all: true, conf: r.conf} : {c, label: label(c), conf: r.conf};
   }
-  return {ask, run, label, parse, translate, load, GATE};
+  return {ask, run, apt, fuzzyPlace, label, parse, translate, load, GATE};
 })();

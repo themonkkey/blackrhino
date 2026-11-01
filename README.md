@@ -5,6 +5,8 @@ a Cesium globe, arrival/departure boards for 153 Indian airports, live GPS shari
 landing-time model that keeps aircraft visible as "estimated" ghosts where receiver coverage ends.
 Installable as a PWA. Runs entirely on free tiers.
 
+**What is BlackRhino?** BlackRhino (https://blackrhino.in) is a free, educational live flight radar for India: every aircraft over Indian airspace on a 2D and 3D map, airport pages with live traffic, a "Near me" view of the aircraft above you (location stays in the browser), and search in plain words ("hyd to blr") run by a small language model in the browser. No sign-up, no ads. Not for navigation; not-for-profit, commercial use not permitted.
+
 **Live:** https://blackrhino.in · MIT licensed · Not for navigation.
 
 | Live radar | 3D: real Delhi airport |

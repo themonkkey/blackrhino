@@ -1,15 +1,15 @@
 <!doctype html>
-<html lang="en">
+<html lang="en-IN">
 <head>
 <meta charset="utf-8">
 <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
-<title>blackrhino · every flight over india, live</title>
-<meta name="description" content="BlackRhino tracks every aircraft over India in real time: a live radar scope, a 3D India with real clouds, airport boards, landing estimates and flight sharing that works in airplane mode. Free, no sign-up.">
+<title>Live Flight Radar India: Track Every Flight | BlackRhino</title>
+<meta name="description" content="Free live flight radar for India: see every aircraft on a 2D map and a 3D globe, airport flights, and the plane above you. No sign-up.">
 <meta name="theme-color" content="#030405">
 <link rel="canonical" href="https://blackrhino.in/">
 <meta property="og:type" content="website"><meta property="og:site_name" content="BlackRhino">
-<meta property="og:title" content="blackrhino · every flight over india, live">
-<meta property="og:description" content="A live radar for Indian airspace. 2D scope, 3D India with real clouds, airport boards, offline flight sharing. Free.">
+<meta property="og:title" content="Live Flight Radar India: Track Every Flight | BlackRhino">
+<meta property="og:description" content="Free live flight radar for India: see every aircraft on a 2D map and a 3D globe, airport flights, and the plane above you. No sign-up.">
 <meta property="og:url" content="https://blackrhino.in/"><meta property="og:image" content="https://blackrhino.in/og.jpg">
 <meta property="og:image:width" content="1200"><meta property="og:image:height" content="630">
 <meta name="twitter:card" content="summary_large_image"><meta name="twitter:image" content="https://blackrhino.in/og.jpg">
@@ -290,7 +290,29 @@ footer{padding:80px 0 34px;overflow:hidden}
   .livery::before,.share::before{background:linear-gradient(180deg,var(--bg) 0%,rgba(3,4,5,.55) 25%,rgba(3,4,5,.7) 70%,var(--bg) 100%)}
 }
 @media (prefers-reduced-motion:reduce){*{animation:none!important;transition:none!important}.rv,.fs,.pass{opacity:1;transform:none}h1.big .ln>span{transform:none}}
+
+.about-sec{padding:clamp(70px,11vw,150px) 0;background:var(--bg);border-top:1px solid rgba(255,255,255,.06)}
+.ab-grid{display:grid;grid-template-columns:repeat(4,1fr);gap:14px;margin-top:clamp(28px,4vw,52px)}
+.ab{padding:20px 20px 22px;border:1px solid rgba(255,255,255,.09);border-radius:14px;background:var(--carbon)}
+.ab b{display:block;font:500 15px var(--disp);letter-spacing:.01em;color:var(--ink);margin-bottom:8px}
+.ab p{margin:0;color:var(--ink-2);font-size:13.5px;line-height:1.55}
+.ab a{color:var(--sky)}
+@media (max-width:900px){.ab-grid{grid-template-columns:repeat(2,1fr)}}
+@media (max-width:560px){.ab-grid{grid-template-columns:1fr}}
+
+.faq-sec{padding:clamp(70px,11vw,150px) 0 0;background:var(--bg);border-top:1px solid rgba(255,255,255,.06)}
+.faq-list{margin-top:clamp(24px,4vw,44px);max-width:820px}
+.faq-list details{border-bottom:1px solid rgba(255,255,255,.1);padding:16px 0}
+.faq-list summary{cursor:pointer;font:500 18px var(--disp);letter-spacing:-.01em;color:var(--ink);list-style:none;display:flex;justify-content:space-between;gap:16px}
+.faq-list summary::after{content:"+";color:var(--sky);font-size:22px;line-height:1}
+.faq-list details[open] summary::after{content:"\2212"}
+.faq-list p{color:var(--ink-2);margin:10px 0 0;max-width:680px;line-height:1.6}
+.faq-sec .sec-head a{color:var(--sky)}
+
+.nav .r{margin-left:24px}
+@media (max-width:1180px){.nav .status span:nth-child(2){display:none}}
 </style>
+<script type="application/ld+json">[{"@context": "https://schema.org", "@type": "WebSite", "name": "BlackRhino", "url": "https://blackrhino.in/", "inLanguage": "en-IN", "description": "Free live flight radar for India."}, {"@context": "https://schema.org", "@type": "WebApplication", "name": "BlackRhino", "url": "https://blackrhino.in/", "applicationCategory": "TravelApplication", "operatingSystem": "Any (web browser)", "browserRequirements": "Requires JavaScript", "isAccessibleForFree": true, "sameAs": ["https://github.com/themonkkey/blackrhino"], "offers": {"@type": "Offer", "price": "0", "priceCurrency": "INR"}, "description": "Live flight radar for India: 2D map, 3D map, airport pages, Near me and ask-in-words search.", "featureList": ["Live aircraft over India", "3D map with terrain and clouds", "Airport pages", "Near me: the aircraft above you", "Search in plain words", "Share my flight"], "inLanguage": "en-IN"}, {"@context": "https://schema.org", "@type": "FAQPage", "mainEntity": [{"@type": "Question", "name": "Is BlackRhino a free live flight radar for India?", "acceptedAnswer": {"@type": "Answer", "text": "Yes. It is a free educational project: no sign-up, no ads, no subscription. You can watch every aircraft over India on a 2D radar map or a 3D map."}}, {"@type": "Question", "name": "Where does the flight data come from?", "acceptedAnswer": {"@type": "Answer", "text": "From community ADS-B receiver networks (adsb.fi, adsb.lol and OpenSky) plus public aircraft and route databases. See the credits page for the full list."}}, {"@type": "Question", "name": "How live is it?", "acceptedAnswer": {"@type": "Answer", "text": "Positions refresh about every 15 seconds. Between updates the position is estimated from the aircraft's speed and heading, and near airports where receivers go quiet, landing positions are modelled."}}, {"@type": "Question", "name": "Can I see which plane is flying above me?", "acceptedAnswer": {"@type": "Answer", "text": "Yes. Near me uses your device's location, only inside your browser, to show which aircraft is overhead, where to look, and when the next one passes. On a phone the view turns with the compass."}}, {"@type": "Question", "name": "Can I search in plain words?", "acceptedAnswer": {"@type": "Answer", "text": "Yes. Type something like \"hyd to blr\" or \"indigo above 30k ft\", even with a spelling slip. A small language model running in your browser turns it into a filter and the map frames the matching flights."}}, {"@type": "Question", "name": "Can I use it for navigation or commercially?", "acceptedAnswer": {"@type": "Answer", "text": "No. Positions can be late or wrong, so never use them for flying or safety decisions. BlackRhino is for learning and curiosity, and commercial use of the site or its data is not permitted."}}, {"@type": "Question", "name": "Does it show military flights?", "acceptedAnswer": {"@type": "Answer", "text": "No. Military-flagged and blocked aircraft are not shown."}}, {"@type": "Question", "name": "Does it work on a phone?", "acceptedAnswer": {"@type": "Answer", "text": "Yes. Open blackrhino.in on any phone, or add it to your home screen to use it like an app."}}]}]</script>
 </head>
 <body>
 <div class="grain" aria-hidden="true"></div>
@@ -309,7 +331,7 @@ footer{padding:80px 0 34px;overflow:hidden}
 <header class="nav" id="nav">
   <a class="wordmark" href="/" aria-label="BlackRhino home"><svg><use href="#rhino"/></svg>blackrhino<span class="dot"></span></a>
   <div class="status"><span class="live"><i></i><b id="nAir">···</b> airborne</span><span>VIDP · VABB · VOBL</span><span><b id="clock">--:--:--</b> IST</span></div>
-  <div class="r"><a class="l" href="#scope-sec">Scope</a><a class="l" href="#livery">Livery</a><a class="pill sky sm" href="/map">Open radar <svg><use href="#arr"/></svg></a></div>
+  <div class="r"><a class="l" href="#scope-sec">Scope</a><a class="l" href="#livery">Livery</a><a class="l" href="#about">About</a><a class="pill sky sm" href="/map">Open radar <svg><use href="#arr"/></svg></a></div>
 </header>
 
 <!-- 01 · HERO -->
@@ -423,6 +445,10 @@ footer{padding:80px 0 34px;overflow:hidden}
       <div class="fs"><div class="cap">ILS<b>03</b></div><div class="nm-c"><div class="k">feature</div><div class="nm">landing estimates</div></div><div class="rt"><div class="k">method</div><div class="f">3° GLIDE · METAR WIND</div></div><div class="box">3°</div><div class="rm">Low over an airport, receivers go quiet. We pick the runway from live wind and fly the aircraft down the glide path.</div></div>
       <div class="fs alt"><div class="cap">SHR<b>04</b></div><div class="nm-c"><div class="k">feature</div><div class="nm">share my flight</div></div><div class="rt"><div class="k">mode</div><div class="f">OFFLINE · AIRPLANE MODE</div></div><div class="box">GPS</div><div class="rm">Your phone logs GPS in the air and uploads on landing. Family follow one link.</div></div>
       <div class="fs"><div class="cap">APP<b>05</b></div><div class="nm-c"><div class="k">feature</div><div class="nm">install it</div></div><div class="rt"><div class="k">store</div><div class="f">NONE NEEDED · PWA</div></div><div class="box">0 MB</div><div class="rm">Add to home screen. Opens instantly and caches maps for patchy networks.</div></div>
+      <div class="fs alt"><div class="cap">NEW<b>06</b></div><div class="nm-c"><div class="k">feature</div><div class="nm">near me</div></div><div class="rt"><div class="k">where</div><div class="f">ON YOUR DEVICE ONLY</div></div><div class="box">GPS</div><div class="rm">Allow location and see which aircraft is above you right now: where to look, how high, and when the next one passes. Your position stays in your browser. On a phone the view turns with the compass, like a maps app.</div></div>
+      <div class="fs"><div class="cap">NEW<b>07</b></div><div class="nm-c"><div class="k">feature</div><div class="nm">sky view</div></div><div class="rt"><div class="k">view</div><div class="f">FIRST PERSON · 3D</div></div><div class="box">3D</div><div class="rm">Stand where you are and look up: aircraft drawn where they really are in the sky, with a callsign. Switch to the 2D map or a chase view of the same flight in one tap.</div></div>
+      <div class="fs alt"><div class="cap">NEW<b>08</b></div><div class="nm-c"><div class="k">feature</div><div class="nm">ask in words</div></div><div class="rt"><div class="k">runs</div><div class="f">IN YOUR BROWSER</div></div><div class="box">ASK</div><div class="rm">Type "hyd to blr" or "indigo above 30k ft", even with a spelling slip. A small language model, trained from scratch for this and running on your device, turns it into a filter. The map then frames the matching flights.</div></div>
+      <div class="fs"><div class="cap">NEW<b>09</b></div><div class="nm-c"><div class="k">feature</div><div class="nm">tilted 3d map</div></div><div class="rt"><div class="k">layer</div><div class="f">TERRAIN · BUILDINGS</div></div><div class="box">TLT</div><div class="rm">Tilt the radar map to see terrain, buildings and aircraft at their altitude. Smoother landing and taxi animations, and a steadier connection when the network is weak.</div></div>
     </div>
   </div>
 </section>
@@ -452,13 +478,38 @@ footer{padding:80px 0 34px;overflow:hidden}
   <div class="slate"><i></i>Cam 04 · climb · runway heading</div>
 </section>
 
+<!-- FAQ -->
+<section class="faq-sec" id="faq">
+  <div class="wrap">
+    <div class="sec-head"><div><div class="lbl sky rv">07 · Questions</div><h2 class="h rv">flight radar,<br><em>answered.</em></h2></div>
+    <p class="rv">The short answers about the live flight radar for India. More on the <a href="/airports">airport pages</a>, the <a href="/map">radar map</a> and the <a href="/3d">3D map</a>.</p></div>
+    <div class="faq-list"><details class="rv"><summary>Is BlackRhino a free live flight radar for India?</summary><p>Yes. It is a free educational project: no sign-up, no ads, no subscription. You can watch every aircraft over India on a 2D radar map or a 3D map.</p></details><details class="rv"><summary>Where does the flight data come from?</summary><p>From community ADS-B receiver networks (adsb.fi, adsb.lol and OpenSky) plus public aircraft and route databases. See the credits page for the full list.</p></details><details class="rv"><summary>How live is it?</summary><p>Positions refresh about every 15 seconds. Between updates the position is estimated from the aircraft&#x27;s speed and heading, and near airports where receivers go quiet, landing positions are modelled.</p></details><details class="rv"><summary>Can I see which plane is flying above me?</summary><p>Yes. Near me uses your device&#x27;s location, only inside your browser, to show which aircraft is overhead, where to look, and when the next one passes. On a phone the view turns with the compass.</p></details><details class="rv"><summary>Can I search in plain words?</summary><p>Yes. Type something like &quot;hyd to blr&quot; or &quot;indigo above 30k ft&quot;, even with a spelling slip. A small language model running in your browser turns it into a filter and the map frames the matching flights.</p></details><details class="rv"><summary>Can I use it for navigation or commercially?</summary><p>No. Positions can be late or wrong, so never use them for flying or safety decisions. BlackRhino is for learning and curiosity, and commercial use of the site or its data is not permitted.</p></details><details class="rv"><summary>Does it show military flights?</summary><p>No. Military-flagged and blocked aircraft are not shown.</p></details><details class="rv"><summary>Does it work on a phone?</summary><p>Yes. Open blackrhino.in on any phone, or add it to your home screen to use it like an app.</p></details></div>
+  </div>
+</section>
+
+<!-- 09 · ABOUT -->
+<section class="about-sec" id="about">
+  <div class="wrap">
+    <div class="sec-head">
+      <div><div class="lbl sky rv">08 · About this project</div><h2 class="h rv">made to learn,<br><em>not to sell.</em></h2></div>
+      <p class="rv">BlackRhino is a free educational project: a place to explore aviation data, maps and small machine-learning models. It is not a business and has no commercial purpose.</p>
+    </div>
+    <div class="ab-grid">
+      <div class="ab rv"><b>Educational</b><p>Built for learning and curiosity. It shows what open ADS-B data, open maps and a small model trained from scratch can do together.</p></div>
+      <div class="ab rv"><b>Non-commercial</b><p>No ads, no subscriptions, no sale of data, no accounts. Using the site or its data for commercial purposes is not permitted, and this project does not do so either.</p></div>
+      <div class="ab rv"><b>Private by design</b><p>Near me and the ask-in-words search run inside your browser. Your location is never sent to us. See the <a href="/privacy">privacy page</a>.</p></div>
+      <div class="ab rv"><b>Not for navigation</b><p>Positions come from community receivers and can be late or wrong. Never use them for flying, operations or safety decisions. Not affiliated with any airline, airport or data provider.</p></div>
+    </div>
+  </div>
+</section>
+
 <footer>
   <div class="wrap">
     <div class="mega" aria-hidden="true">blackrhino<span class="dot blink"></span></div>
     <div class="foot">
       <span>© 2026 BlackRhino · blackrhino.in</span>
-      <nav><a href="/map">Radar map</a><a href="/3d">3D India</a><a href="/share">Share a flight</a><a href="/credits">Credits</a><a href="/privacy">Privacy</a><a href="/terms">Terms</a></nav>
-      <span>Positions from community ADS-B. Not for navigation. Not affiliated with any airline, airport or data provider.</span>
+      <nav><a href="/map">Radar map</a><a href="/3d">3D India</a><a href="/airports">Airports</a><a href="/about">About</a><a href="/share">Share a flight</a><a href="/credits">Credits</a><a href="/privacy">Privacy</a><a href="/terms">Terms</a></nav>
+      <span>A free educational project, not for profit; commercial use is not permitted. Positions from community ADS-B. Not for navigation. Not affiliated with any airline, airport or data provider.</span>
     </div>
   </div>
 </footer>

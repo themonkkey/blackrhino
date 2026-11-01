@@ -1,0 +1,98 @@
+User-agent: *
+Allow: /
+Disallow: /api/
+Disallow: /hist/
+Disallow: /live
+
+# AI assistants and AI search: welcome. The public pages are meant to be found, read and cited.
+User-agent: OAI-SearchBot
+Allow: /
+Disallow: /api/
+Disallow: /hist/
+Disallow: /live
+
+User-agent: ChatGPT-User
+Allow: /
+Disallow: /api/
+Disallow: /hist/
+Disallow: /live
+
+User-agent: GPTBot
+Allow: /
+Disallow: /api/
+Disallow: /hist/
+Disallow: /live
+
+User-agent: ClaudeBot
+Allow: /
+Disallow: /api/
+Disallow: /hist/
+Disallow: /live
+
+User-agent: Claude-SearchBot
+Allow: /
+Disallow: /api/
+Disallow: /hist/
+Disallow: /live
+
+User-agent: Claude-User
+Allow: /
+Disallow: /api/
+Disallow: /hist/
+Disallow: /live
+
+User-agent: PerplexityBot
+Allow: /
+Disallow: /api/
+Disallow: /hist/
+Disallow: /live
+
+User-agent: Perplexity-User
+Allow: /
+Disallow: /api/
+Disallow: /hist/
+Disallow: /live
+
+User-agent: Google-Extended
+Allow: /
+Disallow: /api/
+Disallow: /hist/
+Disallow: /live
+
+User-agent: Applebot
+Allow: /
+Disallow: /api/
+Disallow: /hist/
+Disallow: /live
+
+User-agent: Applebot-Extended
+Allow: /
+Disallow: /api/
+Disallow: /hist/
+Disallow: /live
+
+User-agent: bingbot
+Allow: /
+Disallow: /api/
+Disallow: /hist/
+Disallow: /live
+
+User-agent: DuckAssistBot
+Allow: /
+Disallow: /api/
+Disallow: /hist/
+Disallow: /live
+
+User-agent: MistralAI-User
+Allow: /
+Disallow: /api/
+Disallow: /hist/
+Disallow: /live
+
+User-agent: cohere-ai
+Allow: /
+Disallow: /api/
+Disallow: /hist/
+Disallow: /live
+
+Sitemap: https://blackrhino.in/sitemap.xml

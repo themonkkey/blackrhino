@@ -1,5 +1,5 @@
 <!doctype html>
-<html lang="en">
+<html lang="en-IN">
 <head>
 <meta charset="utf-8">
 <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
@@ -10,10 +10,10 @@
 <link rel="manifest" href="manifest.webmanifest">
 <link rel="icon" type="image/png" href="icons/favicon-32.png">
 <link rel="apple-touch-icon" href="icons/apple-touch-icon.png">
-<title>blackrhino · 3D India, live</title>
-<meta name="description" content="Live flights over a 3D India with real terrain, live clouds and real airport layouts. Follow any flight from the chase camera or the cockpit.">
+<title>3D India Flight Tracker with Terrain and Live Clouds | BlackRhino</title>
+<meta name="description" content="Watch every aircraft over India in 3D: real terrain, the sun, live satellite clouds, and chase, cockpit or orbit views. Free live flight tracker.">
 <meta property="og:type" content="website"><meta property="og:site_name" content="blackrhino">
-<meta property="og:title" content="blackrhino · 3D India, live"><meta property="og:description" content="Live flights over a 3D India with real terrain, live clouds and real airport layouts. Follow any flight from the chase camera or the cockpit.">
+<meta property="og:title" content="3D India Flight Tracker with Terrain and Live Clouds | BlackRhino"><meta property="og:description" content="Watch every aircraft over India in 3D: real terrain, the sun, live satellite clouds, and chase, cockpit or orbit views. Free live flight tracker.">
 <meta property="og:image" content="https://blackrhino.in/og.jpg"><meta property="og:image:width" content="1200"><meta property="og:image:height" content="630">
 <meta name="twitter:card" content="summary_large_image"><meta name="twitter:image" content="https://blackrhino.in/og.jpg">
 <link rel="canonical" href="https://blackrhino.in/3d">
@@ -38,6 +38,7 @@ body.has-flight #watchBar{display:none}
 <script type="importmap">{"imports": {"three": "https://cdn.jsdelivr.net/npm/three@0.160.0/build/three.module.js", "three/addons/": "https://cdn.jsdelivr.net/npm/three@0.160.0/examples/jsm/"}, "integrity": {"https://cdn.jsdelivr.net/npm/three@0.160.0/build/three.module.js": "sha384-61S/Nu32S3E5+n+KpCOTb2eRYps6fVKm+9Gz1QBvSePFthb46f063Aa/qe/lykFZ", "https://cdn.jsdelivr.net/npm/three@0.160.0/examples/jsm/controls/OrbitControls.js": "sha384-qlO/ZugKPxAQUAvTlQoo0QECzxJIJySZmCF/DHdb2Xn/hHndFwX/vfUAC9Hbk6LP", "https://cdn.jsdelivr.net/npm/three@0.160.0/examples/jsm/objects/Sky.js": "sha384-wuDrkXs4/6ZP+utdQQ7XggxDVg1Lt50OuvF4p/Ac5chibUcyJqnBdJqACclm1Hea", "https://cdn.jsdelivr.net/npm/three@0.160.0/examples/jsm/loaders/GLTFLoader.js": "sha384-oxY9vSeh7Mrt5WmhN8xfWoDRnmoW9krEiRBY7vJKaK90jMUidM0fhbUwcblpBgTu", "https://cdn.jsdelivr.net/npm/three@0.160.0/examples/jsm/renderers/CSS2DRenderer.js": "sha384-oxPlnJSeUCYU9W3RMQswb4S/vFd4Bhxuy1Ffx0V2KJakWeb6n1gaqUtSE9Ic/F72", "https://cdn.jsdelivr.net/npm/three@0.160.0/examples/jsm/utils/BufferGeometryUtils.js": "sha384-jHGXS4+FuVOBnZkNme2ury3Ccg5DWDLYK22xX/WGdZCZsjRM4J+3n6Qc4CXx1Hjf"}}</script>
 </head>
 <body class="v3d">
+<h1 class="sr">3D India flight tracker</h1><p class="sr">A live 3D view of Indian airspace with real terrain, satellite clouds and aircraft at their true altitude. See the same flights on the <a href="/map">2D flight radar map</a> or browse <a href="/airports">airports</a>.</p>
 <div id="gl"></div><div id="labels"></div>
 <div id="loader"><div class="box"><div class="ring"></div><b>Building India in 3D</b><span id="ldTxt">terrain, imagery, sky…</span></div></div>
 <div id="top" class="hud">
@@ -115,7 +116,8 @@ const $ = id => document.getElementById(id);
 if (TRACKING) { $('ve').value = 3; $('veV').textContent = '3×'; }
 
 // ================= renderer, scene, camera =================
-const renderer = new THREE.WebGLRenderer({antialias: true, logarithmicDepthBuffer: true, powerPreference: 'high-performance'});
+const QP = new URLSearchParams(location.search);   // ?aa=0 / ?nolog=1 are profiling switches
+const renderer = new THREE.WebGLRenderer({antialias: QP.get('aa') !== '0', logarithmicDepthBuffer: QP.get('nolog') !== '1', powerPreference: 'high-performance'});
 renderer.setPixelRatio(Math.min(devicePixelRatio, MOBILE ? 1.5 : 1.75));
 renderer.setSize(innerWidth, innerHeight);
 renderer.toneMapping = THREE.ACESFilmicToneMapping;
@@ -156,7 +158,7 @@ function sunPos(date) {   // solar elevation/azimuth (rad) at the scene centre
   return {el, az};
 }
 const fogDay = new THREE.Color(0xb9cfe4), fogDusk = new THREE.Color(0xd9a77a), fogNight = new THREE.Color(0x0a1020);
-let sunEl = 0.5;
+let sunEl = 0.5, DAY = 1, envEl = -9;
 function updateSun() {
   const tod = +$('tod').value;
   let date = new Date();
@@ -166,13 +168,15 @@ function updateSun() {
   }
   const {el, az} = sunPos(date); sunEl = el;
   const dir = new THREE.Vector3(Math.cos(el) * Math.sin(az), Math.sin(el), -Math.cos(el) * Math.cos(az));
-  su.sunPosition.value.copy(dir);
+  su.sunPosition.value.copy(dir); SUN.copy(dir);
   sunL.position.copy(camTarget()).addScaledVector(dir, 3000); sunL.target.position.copy(camTarget());
   const day = THREE.MathUtils.smoothstep(el, -0.1, 0.25);
   sunL.intensity = 2.6 * day + 0.05; hemi.intensity = 0.12 + 0.5 * day;
   renderer.toneMappingExposure = 0.22 + 0.32 * day;
   const f = el > 0.25 ? fogDay : el > -0.05 ? fogDusk.clone().lerp(fogDay, THREE.MathUtils.smoothstep(el, -0.05, 0.25)) : fogNight.clone().lerp(fogDusk, THREE.MathUtils.smoothstep(el, -0.25, -0.05));
   scene.fog.color.copy(f);
+  if (oceanMat) { oceanMat.uniforms.uDay.value = 0.12 + 0.88 * day; oceanMat.uniforms.uSky.value.copy(f); }
+  DAY = day; if (Math.abs(el - envEl) > 0.03) refreshEnv();
   cloudMat && (cloudMat.uniforms.uDay.value = 0.25 + 0.75 * day);
 }
 const camTarget = () => controls.target;
@@ -234,14 +238,16 @@ const demGrid = (dem) => { const id = dem.ctx.getImageData(0, 0, dem.cv.width, d
 const DEM_URL = (z, x, y) => `https://s3.amazonaws.com/elevation-tiles-prod/terrarium/${z}/${x}/${y}.png`;
 const IMG_URL = (z, x, y) => `https://server.arcgisonline.com/ArcGIS/rest/services/World_Imagery/MapServer/tile/${z}/${y}/${x}`;
 const groundY = (lat, lon) => Math.max(heightAt(lat, lon), 0) / 1000 * VE;
-let terrain = null, ocean = null;
+let terrain = null, terrainFull = null, terrainChunks = [], ocean = null, oceanMat = null;
+const TCH = MOBILE ? 8 : 11;   // terrain chunks per side (440 / 11 = 40 cells; 240 / 8 = 30)
+const SUN = new THREE.Vector3(0, 1, 0);   // unit vector towards the sun (updated with the clock)
 async function buildTerrain() {
   const [dem, img] = await Promise.all([
     mosaic(6, DEM_URL), mosaic(MOBILE ? 6 : 7, IMG_URL)]);
   H = demGrid(dem);
   const tex = new THREE.CanvasTexture(img.cv);
   tex.colorSpace = THREE.SRGBColorSpace; tex.anisotropy = renderer.capabilities.getMaxAnisotropy(); tex.generateMipmaps = true;
-  const SX = MOBILE ? 300 : 560, SY = SX;
+  const SX = MOBILE ? 240 : 440, SY = SX;
   const geo = new THREE.BufferGeometry();
   const pos = new Float32Array((SX + 1) * (SY + 1) * 3), uv = new Float32Array((SX + 1) * (SY + 1) * 2), idx = [];
   const iw = img.cv.width, ih = img.cv.height;
@@ -254,19 +260,62 @@ async function buildTerrain() {
   for (let j = 0; j < SY; j++) for (let i = 0; i < SX; i++) { const a = j * (SX + 1) + i, b = a + 1, c = a + SX + 1, d = c + 1; idx.push(a, c, b, b, c, d); }
   geo.setAttribute('position', new THREE.BufferAttribute(pos, 3)); geo.setAttribute('uv', new THREE.BufferAttribute(uv, 2));
   geo.setIndex(idx); geo.computeVertexNormals();
-  terrain = new THREE.Mesh(geo, holeMat(new THREE.MeshStandardMaterial({map: tex, roughness: 0.96, metalness: 0})));
+  // the base terrain is cut into chunks that share one set of vertices: the browser then skips every chunk outside the view
+  // (a low view over one airport used to draw all 600,000 triangles of India)
+  terrainFull = geo;
+  const tmat = holeMat(new THREE.MeshLambertMaterial({map: tex}));   // terrain is matte: Lambert lighting looks the same as PBR here and shades much faster
+  terrain = new THREE.Group(); terrainChunks = [];
+  const cs = SX / TCH, P = geo.attributes.position;
+  for (let cj = 0; cj < TCH; cj++) for (let ci = 0; ci < TCH; ci++) {
+    const i0 = ci * cs, j0 = cj * cs, ix = new Uint32Array(cs * cs * 6); let q = 0, x0 = 1e9, x1 = -1e9, y0 = 1e9, y1 = -1e9, z0 = 1e9, z1 = -1e9;
+    for (let j = j0; j <= j0 + cs; j++) for (let i = i0; i <= i0 + cs; i++) {
+      const k = j * (SX + 1) + i, x = P.getX(k), y = P.getY(k), z = P.getZ(k);
+      if (x < x0) x0 = x; if (x > x1) x1 = x; if (y < y0) y0 = y; if (y > y1) y1 = y; if (z < z0) z0 = z; if (z > z1) z1 = z;
+    }
+    for (let j = j0; j < j0 + cs; j++) for (let i = i0; i < i0 + cs; i++) { const a = j * (SX + 1) + i, b = a + 1, c = a + SX + 1, e = c + 1; ix.set([a, c, b, b, c, e], q); q += 6; }
+    const g = new THREE.BufferGeometry();
+    g.setAttribute('position', P); g.setAttribute('uv', geo.attributes.uv); g.setAttribute('normal', geo.attributes.normal); g.setIndex(new THREE.BufferAttribute(ix, 1));
+    const ch = {g, x0, x1, z0, z1, y0: y0 / VE, y1: y1 / VE}; setChunkBounds(ch); terrainChunks.push(ch);
+    terrain.add(new THREE.Mesh(g, tmat));
+  }
   scene.add(terrain);
-  // glossy sea surface for sun glint + a dark apron so the map edge disappears into haze
-  ocean = new THREE.Mesh(new THREE.PlaneGeometry(20000, 20000), new THREE.MeshStandardMaterial({color: 0x0c2f4f, roughness: 0.28, metalness: 0.2, transparent: true, opacity: 0.38}));
-  ocean.rotation.x = -Math.PI / 2; ocean.position.y = 0.004 * VE; scene.add(ocean);
-  const apron = new THREE.Mesh(new THREE.PlaneGeometry(40000, 40000), new THREE.MeshStandardMaterial({color: 0x10263a, roughness: 1}));
+  // glossy, gently moving sea (cheap analytic shader: fresnel sky reflection + sun glint) and a dark apron outside the map so the edge disappears into haze
+  oceanMat = new THREE.ShaderMaterial({transparent: true, depthWrite: false, fog: true,
+    uniforms: THREE.UniformsUtils.merge([THREE.UniformsLib.fog, {uSun: {value: SUN}, uDay: {value: 1}, uTime: {value: 0}, uSky: {value: new THREE.Color(0xb9cfe4)}}]),
+    vertexShader: ['varying vec3 vW;', '#include <common>', '#include <fog_pars_vertex>', '#include <logdepthbuf_pars_vertex>',
+      'void main(){', '  vec4 wp = modelMatrix * vec4(position, 1.0); vW = wp.xyz;', '  vec4 mvPosition = viewMatrix * wp; gl_Position = projectionMatrix * mvPosition;',
+      '#include <logdepthbuf_vertex>', '#include <fog_vertex>', '}'].join('\n'),
+    fragmentShader: ['uniform vec3 uSun, uSky; uniform float uDay, uTime;', 'varying vec3 vW;', '#include <common>', '#include <fog_pars_fragment>', '#include <logdepthbuf_pars_fragment>',
+      'void main(){', '#include <logdepthbuf_fragment>',
+      '  vec3 V = cameraPosition - vW; float dist = length(V); V /= dist;',
+      '  vec2 p = vW.xz;',
+      '  float p1 = dot(p, vec2(0.8, 0.6)) * 55.0, p2 = dot(p, vec2(-0.5, 0.85)) * 90.0, p3 = dot(p, vec2(0.2, -0.98)) * 160.0;',
+      '  float a1 = 0.10 * (1.0 - smoothstep(0.35, 1.1, fwidth(p1))), a2 = 0.07 * (1.0 - smoothstep(0.35, 1.1, fwidth(p2))), a3 = 0.05 * (1.0 - smoothstep(0.35, 1.1, fwidth(p3)));',   // a ripple fades out as soon as it changes faster than the screen can show: no moire at any distance
+      '  vec2 g = vec2(0.8, 0.6) * (a1 * cos(p1 + uTime * 1.4)) + vec2(-0.5, 0.85) * (a2 * cos(p2 + uTime * 1.9)) + vec2(0.2, -0.98) * (a3 * cos(p3 + uTime * 2.7));',
+      '  vec3 N = normalize(vec3(-g.x, 1.0, -g.y));',
+      '  float f = 0.03 + 0.97 * pow(1.0 - clamp(dot(N, V), 0.0, 1.0), 5.0);',
+      '  vec3 R = reflect(-V, N);',
+      '  vec3 sky = mix(uSky, uSky * vec3(0.6, 0.78, 1.15), clamp(R.y * 1.6, 0.0, 1.0));',
+      '  float s = pow(max(dot(R, normalize(uSun)), 0.0), 700.0) * 4.0 * uDay;',
+      '  vec3 deep = vec3(0.02, 0.10, 0.17) * (0.35 + 0.65 * uDay);',
+      '  vec3 col = mix(deep, sky * (0.25 + 0.75 * uDay), f) + s * vec3(1.0, 0.92, 0.75);',
+      '  gl_FragColor = vec4(col, clamp(mix(0.46, 0.96, f) + s, 0.0, 1.0));',
+      '#include <tonemapping_fragment>', '#include <colorspace_fragment>', '#include <fog_fragment>', '}'].join('\n')});
+  ocean = new THREE.Mesh(new THREE.PlaneGeometry(20000, 20000), oceanMat);
+  ocean.rotation.x = -Math.PI / 2; ocean.position.y = 0.004 * VE; ocean.renderOrder = 1; scene.add(ocean);
+  const [ax0, az0] = xz(BB.n, BB.w), [ax1, az1] = xz(BB.s, BB.e), sh = new THREE.Shape(), hole = new THREE.Path(), m = 2;   // shape y = -world z
+  sh.moveTo(-20000, -20000); sh.lineTo(20000, -20000); sh.lineTo(20000, 20000); sh.lineTo(-20000, 20000); sh.closePath();
+  hole.moveTo(ax0 + m, -(az0 + m)); hole.lineTo(ax0 + m, -(az1 - m)); hole.lineTo(ax1 - m, -(az1 - m)); hole.lineTo(ax1 - m, -(az0 + m)); hole.closePath(); sh.holes.push(hole);
+  const apron = new THREE.Mesh(new THREE.ShapeGeometry(sh), new THREE.MeshLambertMaterial({color: 0x10263a}));   // a frame: nothing is shaded under the map
   apron.rotation.x = -Math.PI / 2; apron.position.y = -0.3; scene.add(apron);
 }
+const setChunkBounds = ch => { ch.g.boundingBox = new THREE.Box3(new THREE.Vector3(ch.x0, ch.y0 * VE, ch.z0), new THREE.Vector3(ch.x1, ch.y1 * VE, ch.z1)); ch.g.boundingSphere = ch.g.boundingBox.getBoundingSphere(new THREE.Sphere()); };
 function rescaleTerrain(prevVE) {
   if (!terrain) return;
-  const p = terrain.geometry.attributes.position;
+  const p = terrainFull.attributes.position;
   for (let i = 0; i < p.count; i++) p.setY(i, p.getY(i) / prevVE * VE);
-  p.needsUpdate = true; terrain.geometry.computeVertexNormals();
+  p.needsUpdate = true; terrainFull.computeVertexNormals(); terrainFull.attributes.normal.needsUpdate = true;
+  for (const ch of terrainChunks) setChunkBounds(ch);
   ocean.position.y = 0.004 * VE;
   if (D) { const q = D.mesh.geometry.attributes.position; for (let i = 0; i < q.count; i++) q.setY(i, q.getY(i) / prevVE * VE); q.needsUpdate = true; D.mesh.geometry.computeVertexNormals(); }
   for (const a of APTS.values()) if (a.ap) a.ap.group.position.y = a.ap.elevM / 1000 * VE;
@@ -275,9 +324,23 @@ function rescaleTerrain(prevVE) {
 }
 
 // ================= detail patch: sharper imagery + terrain under the camera, level picked by camera distance =================
+// fine-grain detail map: satellite imagery is ~20 m per pixel, so close to the ground it looks smeared. A tiling noise (two scales) modulates the colour
+// within a few km of the camera, the way games add detail to terrain textures.
+const DETAIL = {value: (() => { const c = document.createElement('canvas'); c.width = c.height = 256; const x = c.getContext('2d'), im = x.createImageData(256, 256);
+  const r = (i, j, s) => { const h = Math.sin(i * 127.1 + j * 311.7 + s * 74.7) * 43758.5453; return h - Math.floor(h); };
+  const vn = (u, v, s, P) => { const i = Math.floor(u), j = Math.floor(v), fu = u - i, fv = v - j, a = fu * fu * (3 - 2 * fu), b = fv * fv * (3 - 2 * fv), q = (x2, y2) => r(((x2 % P) + P) % P, ((y2 % P) + P) % P, s);
+    return (q(i, j) * (1 - a) + q(i + 1, j) * a) * (1 - b) + (q(i, j + 1) * (1 - a) + q(i + 1, j + 1) * a) * b; };
+  for (let j = 0; j < 256; j++) for (let i = 0; i < 256; i++) { let n = 0, amp = 0.5, tot = 0; for (let o = 0; o < 5; o++) { const f = 2 ** o * 4; n += amp * vn(i / 256 * f, j / 256 * f, o, f); tot += amp; amp *= 0.55; } n /= tot; const v = Math.round(Math.min(1, Math.max(0, 0.5 + (n - 0.5) * 1.8)) * 255), k = (j * 256 + i) * 4; im.data[k] = im.data[k + 1] = im.data[k + 2] = v; im.data[k + 3] = 255; }
+  x.putImageData(im, 0, 0); const t = new THREE.CanvasTexture(c); t.wrapS = t.wrapT = THREE.RepeatWrapping; t.anisotropy = 4; t.generateMipmaps = true; return t; })()};
+function addDetail(sh) {
+  sh.uniforms.uDetail = DETAIL;
+  sh.vertexShader = 'varying vec2 vDW;\n' + sh.vertexShader.replace('#include <project_vertex>', '#include <project_vertex>\nvDW = (modelMatrix * vec4(transformed, 1.0)).xz;');
+  sh.fragmentShader = 'uniform sampler2D uDetail;\nvarying vec2 vDW;\n' + sh.fragmentShader.replace('#include <map_fragment>', '#include <map_fragment>\n  { float dd = length(vDW - cameraPosition.xz); if (dd < 7.0) { float n = texture2D(uDetail, vDW * 24.0).r * 0.6 + texture2D(uDetail, vDW * 2.5).r * 0.4; diffuseColor.rgb *= mix(1.0, 0.62 + 0.76 * n, 0.9 * (1.0 - smoothstep(0.8, 7.0, dd))); } }');
+}
 const HOLE = {value: new THREE.Vector4(1e9, 1e9, -1e9, -1e9)};   // world x0,z0,x1,z1 where the base terrain steps aside
 function holeMat(m) {
   m.onBeforeCompile = sh => {
+    addDetail(sh);
     sh.uniforms.uHole = HOLE;
     sh.vertexShader = 'varying vec2 vWxz;\n' + sh.vertexShader.replace('#include <project_vertex>', '#include <project_vertex>\nvWxz = (modelMatrix * vec4(transformed, 1.0)).xz;');
     sh.fragmentShader = 'uniform vec4 uHole;\nvarying vec2 vWxz;\n' + sh.fragmentShader.replace('void main() {',
@@ -325,7 +388,8 @@ async function buildDetail(w) {
     geo.setAttribute('position', new THREE.BufferAttribute(pos, 3)); geo.setAttribute('uv', new THREE.BufferAttribute(uv, 2)); geo.setAttribute('color', new THREE.BufferAttribute(col, 4));
     geo.setIndex(new THREE.BufferAttribute(idx, 1)); geo.computeVertexNormals();
     const tex = new THREE.CanvasTexture(img.cv); tex.colorSpace = THREE.SRGBColorSpace; tex.anisotropy = renderer.capabilities.getMaxAnisotropy();
-    const mesh = new THREE.Mesh(geo, new THREE.MeshStandardMaterial({map: tex, roughness: 0.94, metalness: 0, vertexColors: true, alphaHash: true}));
+    const dmat = new THREE.MeshLambertMaterial({map: tex, vertexColors: true, alphaHash: true}); dmat.onBeforeCompile = sh => addDetail(sh);
+    const mesh = new THREE.Mesh(geo, dmat);
     scene.add(mesh);
     if (D) { scene.remove(D.mesh); D.mesh.geometry.dispose(); D.mesh.material.map.dispose(); D.mesh.material.dispose(); }
     D = {mesh, bb, z: w.z, lat: w.lat, lon: w.lon, span: w.span, hAt: (la, lo) => sampleH(G, la, lo)};
@@ -384,6 +448,40 @@ const MAX = 1600, MAX_HI = 96, NEAR_KM = 6;   // far planes: 472-triangle model;
 const planes = new Map(), slots = [];   // hex -> plane; instance slot -> hex
 let selected = null, camMode = 'free', lastFetch = 0, serverOffset = 0;
 const nowS = () => Date.now() / 1000 + serverOffset;
+// sky reflections on the aircraft: the sky shader is baked into a small environment map (re-baked only when the sun has moved), shared by every aircraft material
+const pmrem = new THREE.PMREMGenerator(renderer), envScene = new THREE.Scene(), envSky = new Sky(); envSky.scale.setScalar(50); envScene.add(envSky);
+let envRT = null; const envMats = new Set();
+function addEnvMats(root) { root.traverse(o => { if (o.isMesh) for (const m of [].concat(o.material)) if (m && m.isMeshStandardMaterial) envMats.add(m); }); refreshEnv(true); }
+function refreshEnv(force) {
+  if (!envMats.size && !force) return;
+  envEl = sunEl;
+  for (const k of ['turbidity', 'rayleigh', 'mieCoefficient', 'mieDirectionalG']) envSky.material.uniforms[k].value = su[k].value;
+  envSky.material.uniforms.sunPosition.value.copy(su.sunPosition.value);
+  const rt = pmrem.fromScene(envScene); envRT && envRT.dispose(); envRT = rt;
+  for (const m of envMats) { const first = !m.envMap; m.envMap = rt.texture; m.envMapIntensity = 0.1 + 0.32 * DAY; if (first) m.needsUpdate = true; }
+}
+// soft contact shadows: one dark oval on the ground under every aircraft that is low and close (a single draw call for all of them)
+const SH_MAX = 220; let shadows = null;
+function makeShadows() {
+  const geo = new THREE.PlaneGeometry(1, 1); geo.rotateX(-Math.PI / 2);
+  geo.setAttribute('aOp', new THREE.InstancedBufferAttribute(new Float32Array(SH_MAX), 1));
+  const mat = new THREE.ShaderMaterial({transparent: true, depthWrite: false, polygonOffset: true, polygonOffsetFactor: -2, polygonOffsetUnits: -2,
+    vertexShader: ['attribute float aOp;', 'varying float vOp;', 'varying vec2 vUv;', '#include <common>', '#include <logdepthbuf_pars_vertex>',
+      'void main(){', '  vUv = uv; vOp = aOp;', '  vec4 mvPosition = modelViewMatrix * instanceMatrix * vec4(position, 1.0); gl_Position = projectionMatrix * mvPosition;', '#include <logdepthbuf_vertex>', '}'].join('\n'),
+    fragmentShader: ['varying float vOp;', 'varying vec2 vUv;', '#include <common>', '#include <logdepthbuf_pars_fragment>',
+      'void main(){', '#include <logdepthbuf_fragment>', '  float r = length(vUv - 0.5) * 2.0; gl_FragColor = vec4(0.0, 0.0, 0.0, smoothstep(1.0, 0.15, r) * vOp);', '}'].join('\n')});
+  shadows = new THREE.InstancedMesh(geo, mat, SH_MAX); shadows.count = 0; shadows.frustumCulled = false; shadows.renderOrder = 2; scene.add(shadows);
+}
+let shN = 0;
+function addShadow(p, scale) {   // scale: the aircraft's drawn scale (km per model unit)
+  if (!shadows || shN >= SH_MAX || DAY < 0.08 || SUN.y < 0.12) return;
+  const agl = (p.y - p.gy) / VE;   // real km above the ground
+  if (agl > 3.5 || agl < -0.05) return;
+  const t = (p.y - p.gy) / Math.max(SUN.y, 0.2), op = DAY * 0.5 * (1 - clamp(agl / 3.5, 0, 1) * 0.75);
+  V.set(p.x - SUN.x * t, p.gy + 0.0025, p.z - SUN.z * t);
+  E.set(0, Math.PI - p.hdg * R, 0, 'YXZ'); Q.setFromEuler(E); S.set(0.042 * scale * (1 + agl), 1, 0.05 * scale * (1 + agl));
+  M.compose(V, Q, S); shadows.setMatrixAt(shN, M); shadows.geometry.attributes.aOp.array[shN] = op; shN++;
+}
 async function loadModel() {
   const geoOf = g => { let out = null; g.scene.traverse(o => { if (o.isMesh && !out) out = o.geometry; }); out.scale(0.001, 0.001, 0.001); return out; };   // metres -> km
   const [lo, hi] = await Promise.all(['models/airliner.glb', 'models/airliner_hq.glb'].map(u => new GLTFLoader().loadAsync(u)));
@@ -396,6 +494,7 @@ async function loadModel() {
   fleetHi = mk(planeGeo, planeMat, MAX_HI);
   // the followed aircraft is a fully articulated model: gear, flaps, spoilers, reversers, fans, lights
   hero = makeAirliner(THREE); selMesh = hero.root; selMesh.visible = false; scene.add(selMesh);
+  makeShadows(); addEnvMats(fleet); addEnvMats(fleetHi); addEnvMats(selMesh);
 }
 
 // motion: dead reckoning + glide onto new fixes + eased attitude (as in the globe view)
@@ -412,14 +511,17 @@ function place(p, now, fdt) {
   const tr = d.x && typeof d.x.track_rate === 'number' && Math.abs(d.x.track_rate) < 5 ? d.x.track_rate : 0;
   const trackNow = d.track + tr * Math.min(dt, 25);
   // keep moving between fixes: taxiing aircraft too (a fix every few seconds used to make them lurch), capped so a lost signal stops them
-  let [lat, lon] = d.gs > (d.ground ? 1 : 5) ? project(d.lat, d.lon, d.track + (trackNow - d.track) / 2, d.gs, d.ground ? Math.min(dt, 12) : dt) : [d.lat, d.lon];
-  let altFt = d.ground ? 0 : (d.alt || 0) + (d.vr || 0) / 60 * Math.min(dt, 40);
+  if (!d.ground) p.wasAir = true; else if (d.gs < 20) p.wasAir = false;
+  const gyFt = (p.gy != null ? p.gy : 0) / (FT2KM * VE), kin = d.gs > (d.ground ? 1 : 5) ? FT.advance(d, dt, p.gy != null ? gyFt : null, p.wasAir) : {s: 0, v: d.gs * 0.514444, landed: false};
+  p.landed = kin.landed; p.vKt = kin.v / 0.514444;   // arrivals brake after touchdown instead of sliding on at approach speed
+  let [lat, lon] = kin.s > 0 ? project(d.lat, d.lon, d.track + (trackNow - d.track) / 2, 1 / 0.514444, kin.s) : [d.lat, d.lon];   // s metres: 1 m/s for s seconds
+  let altFt = d.ground || kin.landed ? 0 : (d.alt || 0) + (d.vr || 0) / 60 * Math.min(dt, 40);
   if (p.err) { const k = Math.exp(-(performance.now() - p.err.t) / 3000); lat += p.err.lat * k; lon += p.err.lon * k; altFt += p.err.h * k; if (k < 1e-4) p.err = null; }
   p.lat = lat; p.lon = lon; p.altFt = Number.isFinite(altFt) ? Math.max(altFt, 0) : (d.ground ? 0 : d.alt || 0);
   const [x, z] = xz(lat, lon), gyRaw = groundY(lat, lon);
   // terrain height under the plane is low-passed: the detail patch loading/unloading or a runway/DEM mismatch must not make the aircraft pop
   if (p.gy == null || Math.abs(gyRaw - p.gy) > 1.5) { if (p.gy == null || fdt) p.gy = gyRaw; } else p.gy += (gyRaw - p.gy) * ease(7, fdt);
-  const gy = p.gy, yT = d.ground ? gy + 0.004 : Math.max(gy + 0.004, p.altFt * FT2KM * VE);
+  const gy = p.gy, yT = d.ground || p.landed ? gy + 0.004 : Math.max(gy + 0.004, p.altFt * FT2KM * VE);
   // same for the final height: touchdown (altitude -> ground flag) and fix corrections glide instead of snapping
   if (p.y == null || Math.abs(yT - p.y) > 0.8) { if (p.y == null || fdt) p.y = yT; } else p.y += (yT - p.y) * ease(6, fdt);
   p.x = x; p.z = z;
@@ -428,10 +530,10 @@ function place(p, now, fdt) {
   const hCap = (d.ground && d.gs < 40 ? 30 : 12) * fdt;   // deg/s: taxiing aircraft pivot faster than airborne ones turn, but never snap
   p.hdg = (p.hdg + clamp(dh * ease(d.ground && d.gs < 40 ? 3 : 1.5, fdt), -hCap, hCap) + 360) % 360;
   p.turn += ((tr || clamp(dh * 0.5, -3, 3)) - p.turn) * ease(1, fdt);
-  const bankT = d.ground ? 0 : (d.x && typeof d.x.roll === 'number' ? d.x.roll : clamp(Math.atan(d.gs * 0.514444 * p.turn * R / 9.81) / R, -28, 28));
+  const bankT = d.ground || p.landed ? 0 : (d.x && typeof d.x.roll === 'number' ? d.x.roll : clamp(Math.atan(d.gs * 0.514444 * p.turn * R / 9.81) / R, -28, 28));
   p.bank += (bankT - p.bank) * ease(1.2, fdt);
   // pitch = flight-path angle + angle of attack (slow aircraft fly nose-up: ~5 deg on approach, ~2 deg in cruise)
-  const pitT = p.demo && p.demo.pit != null ? p.demo.pit : d.gs > 30 && !d.ground ? Math.atan2((d.vr || 0) * 0.3048 / 60, d.gs * 0.514444) + clamp((260 - d.gs) / 110, 0.03, 1) * 0.09 : 0;
+  const pitT = p.demo && p.demo.pit != null ? p.demo.pit : d.gs > 30 && !d.ground && !p.landed ? Math.atan2((d.vr || 0) * 0.3048 / 60, d.gs * 0.514444) + clamp((260 - d.gs) / 110, 0.03, 1) * 0.09 : 0;
   p.pit = p.pitInit ? p.pit + (pitT - p.pit) * ease(1, fdt) : (p.pitInit = true, pitT);   // first frame starts in the right attitude
 }
 
@@ -444,15 +546,15 @@ function poseMatrix(p, scale, out) {
 
 // ================= articulated model state from the flight data =================
 function heroState(p, dt) {
-  const d = p.dv || p.d, gs = d.gs || 0, vr = d.vr || 0;
-  const agl = d.ground ? 0 : Math.max(0, p.altFt - Math.max(heightAt(p.lat, p.lon), 0) * 3.281);
+  const d = p.dv || p.d, gs = p.vKt != null && !p.demo ? p.vKt : d.gs || 0, vr = p.landed ? 0 : d.vr || 0, G = d.ground || !!p.landed;
+  const agl = G ? 0 : Math.max(0, p.altFt - Math.max(heightAt(p.lat, p.lon), 0) * 3.281);
   let H = p.hero;
   if (!H) {   // first frame for this aircraft: start the model in the right configuration (no replayed animation)
-    H = p.hero = {gear: p.demo ? (p.demo.kind === 'landing' ? 0 : 1) : d.ground || agl < 3000 ? 1 : 0, decel: 0, roll: !!(p.est && d.ground && gs > 35)};
-    if (hero) { hero.state.gear = H.gear; hero.state.flaps = p.demo && p.demo.kind === 'landing' ? .55 : d.ground ? 0 : agl < 10000 ? clamp((235 - gs) / 85, 0, 1) : 0; }
+    H = p.hero = {gear: p.demo ? (p.demo.kind === 'landing' ? 0 : 1) : G || agl < 3000 ? 1 : 0, decel: 0, roll: !!(p.est && G && gs > 35)};
+    if (hero) { hero.state.gear = H.gear; hero.state.flaps = p.demo && p.demo.kind === 'landing' ? .55 : G ? 0 : agl < 10000 ? clamp((235 - gs) / 85, 0, 1) : 0; }
   }
   // landing gear: down on the ground, extends on approach below ~2,000 ft, retracts once climbing away
-  if (d.ground) H.gear = 1;
+  if (G) H.gear = 1;
   else if (vr < -250 && agl < 2200) H.gear = 1;
   else if (vr > 300 && agl > 150) H.gear = 0;
   else if (agl > 5000) H.gear = 0;
@@ -460,15 +562,15 @@ function heroState(p, dt) {
   H.spd = H.spd == null ? gs : H.spd + (gs - H.spd) * Math.min(1, dt * 1.5);
   const dec = (H.sPrev == null ? 0 : (H.sPrev - H.spd) / Math.max(dt, 1e-3)) * 1.9438;   // kt/s
   H.sPrev = H.spd; H.decel += (dec - H.decel) * Math.min(1, dt * 1.2);
-  if (d.ground && H.air && gs > 35) H.roll = true;   // just touched down at speed: it is a rollout from the first frame, not a take-off roll
-  H.air = !d.ground;
-  if (d.ground) { if (!H.roll && gs > 35 && H.decel > 1.2) H.roll = true; else if (H.roll && (gs < 28 || H.decel < -1)) H.roll = false; } else H.roll = false;
-  const rollout = d.ground && H.roll, takeoffRoll = d.ground && gs > 35 && !H.roll;
+  if (G && H.air && gs > 35) H.roll = true;   // just touched down at speed: it is a rollout from the first frame, not a take-off roll
+  H.air = !G;
+  if (G) { if (!H.roll && gs > 35 && H.decel > 1.2) H.roll = true; else if (H.roll && (gs < 28 || H.decel < -1)) H.roll = false; } else H.roll = false;
+  const rollout = G && H.roll, takeoffRoll = G && gs > 35 && !H.roll;
   // flaps follow speed below 10,000 ft (clean above ~230 kt, full below ~150 kt)
-  const flaps = d.ground ? (rollout ? 1 : takeoffRoll ? 0.3 : 0) : agl < 10000 ? clamp((235 - gs) / 85, 0, 1) : 0;
-  return {gear: H.gear, flaps, spoilers: rollout ? 1 : 0, reverse: rollout && gs > 70 ? 1 : 0, ground: !!d.ground, speed: gs * 0.5144,
-    n1: takeoffRoll || (!d.ground && vr > 500 && agl < 12000) ? 0.95 : d.ground && gs < 35 ? 0.24 : 0.55,
-    lights: {nav: true, beacon: true, strobe: !d.ground || gs > 35, landing: agl < 10000 && !(d.ground && gs < 35), taxi: d.ground}};
+  const flaps = G ? (rollout ? 1 : takeoffRoll ? 0.3 : 0) : agl < 10000 ? clamp((235 - gs) / 85, 0, 1) : 0;
+  return {gear: H.gear, flaps, spoilers: rollout ? 1 : 0, reverse: rollout && gs > 70 ? 1 : 0, ground: !!G, speed: gs * 0.5144,
+    n1: takeoffRoll || (!G && vr > 500 && agl < 12000) ? 0.95 : G && gs < 35 ? 0.24 : 0.55,
+    lights: {nav: true, beacon: true, strobe: !G || gs > 35, landing: agl < 10000 && !(G && gs < 35), taxi: G}};
 }
 
 // ================= demo: a simulated A320 landing / taking off on a real runway =================
@@ -548,7 +650,7 @@ async function poll(first) {
   inflight = true;
   try {
     const t = controls.target, lat = LAT0 - t.z / KY, lon = LON0 + t.x / KX;
-    const j = first || await fetch('/api/flights', {headers: {'X-Center': `${lat.toFixed(2)},${lon.toFixed(2)}`}}).then(r => r.json());
+    const j = first || await fetch('/api/flights').then(r => r.json());
     if (!j) throw 0;
     serverOffset = j.now - Date.now() / 1000; lastFetch = Date.now();
     FT.ingest(j); ingest(j.ac);
@@ -749,12 +851,12 @@ FT.init({
 let lastF = performance.now(), sunT = 0, trailKey = '';
 let camFn = null;
 // adaptive resolution: drop the pixel ratio when frames run long, restore it when there is headroom
-const DPR_MAX = Math.min(devicePixelRatio, MOBILE ? 1.5 : 1.75), DPR_MIN = Math.min(1, DPR_MAX);
+const DPR_MAX = Math.min(devicePixelRatio, MOBILE ? 1.5 : 1.75), DPR_MIN = Math.min(0.7, DPR_MAX);   // weak GPUs trade sharpness for smoothness, down to 0.7x
 let dpr = DPR_MAX, slowN = 0, fastN = 0;
 function pace(ms) {
   if (document.hidden || flyT) return;
-  if (ms > 24) { slowN++; fastN = 0; } else if (ms < 14) { fastN++; slowN = 0; } else { slowN = Math.max(0, slowN - 1); }
-  if (slowN > 45 && dpr > DPR_MIN) { dpr = Math.max(DPR_MIN, dpr - 0.25); renderer.setPixelRatio(dpr); slowN = 0; }
+  if (ms > 21) { slowN++; fastN = 0; } else if (ms < 14) { fastN++; slowN = 0; } else { slowN = Math.max(0, slowN - 1); }
+  if (slowN > 30 && dpr > DPR_MIN) { dpr = Math.max(DPR_MIN, dpr - 0.25); renderer.setPixelRatio(dpr); slowN = 0; }
   if (fastN > 240 && dpr < DPR_MAX) { dpr = Math.min(DPR_MAX, dpr + 0.25); renderer.setPixelRatio(dpr); fastN = 0; }
 }
 function frame(t) {
@@ -766,6 +868,7 @@ function frame(t) {
     if (k >= 1) flyT = null;
   }
   const now = nowS(), sz = +$('sz').value;
+  if (oceanMat) oceanMat.uniforms.uTime.value = t / 1000;
   if (DEMO) stepDemo(now, fdt);
   if (fleet) {
     let n = 0, nh = 0;
@@ -781,11 +884,13 @@ function frame(t) {
       const dist = camera.position.distanceTo(V.set(p.x, p.y, p.z));
       const near = dist < NEAR_KM && nh < MAX_HI, m = near ? fleetHi : fleet, i = near ? nh++ : n++;
       m.setMatrixAt(i, poseMatrix(p, Math.max(1, dist * minPx) * sz, M));
+      if (dist < 30) addShadow(p, Math.max(1, dist * minPx) * sz);
       if (near) { const lv = liveryFor(p.d.flight); m.setColorAt(i, C.setHex(lv.tail).lerp(WHITE, 0.55)); }   // close up: airline colours
       else m.setColorAt(i, C.setHex(altCol(p.d.alt, p.d.ground)).lerp(WHITE, 0.25));
       if (!near) slots[i] = hex;
     }
     fleet.count = n; fleetHi.count = nh;
+    if (shadows) { const sp = selected && planes.get(selected); if (sp) addShadow(sp, Math.max(1, camera.position.distanceTo(V.set(sp.x, sp.y, sp.z)) * 0.6) * sz * 1.2); shadows.count = shN; shadows.instanceMatrix.needsUpdate = true; shadows.geometry.attributes.aOp.needsUpdate = true; shN = 0; }
     for (const m of [fleet, fleetHi]) { m.instanceMatrix.needsUpdate = true; m.instanceColor.needsUpdate = true; }
     const p = selected && planes.get(selected);
     if (p) {
@@ -837,6 +942,10 @@ function frame(t) {
   // airport labels only when reasonably close
   const camH = camera.position.y;
   for (const o of aptLabels) o.visible = $('labels').checked && camera.position.distanceTo(o.position) < (camH > 600 ? 2600 : 900);
+  { // aerial perspective: thick haze at ground level (distant land melts into the horizon), thin from high up so the whole map stays visible
+    const h = Math.max(camera.position.y, 0.001), dens = camMode === 'me' ? 0.004 : THREE.MathUtils.lerp(0.02, 0.00022, THREE.MathUtils.smoothstep(h, 4, 70));
+    scene.fog.density += (dens - scene.fog.density) * Math.min(1, fdt * 3);
+  }
   if (t - sunT > 2000) { sunT = t; updateSun(); }
   if (t - (window.__veT || 0) > 900 && !flyT) { window.__veT = t; applyVE(false); }
   updateDetail(t);
