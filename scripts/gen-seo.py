@@ -18,7 +18,7 @@ km = lambda a, b: 12742 * math.asin(math.sqrt(math.sin(math.radians(b['lat'] - a
 term = open(os.path.join(PUB, 'terms.html')).read()
 HEAD_SVG = re.search(r'<a class="wm" href="/">(.*?)</a>', term, re.S).group(1)
 FONTS = '<link rel="preconnect" href="https://fonts.googleapis.com"><link rel="preconnect" href="https://fonts.gstatic.com" crossorigin><link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Montserrat+Alternates:wght@400;500&family=Montserrat:wght@400;500;600&family=JetBrains+Mono:wght@400&display=swap">'
-HEADER = f'<header><div class="wrap"><a class="wm" href="/">{HEAD_SVG}</a><nav><a href="/map">Radar</a><a href="/airports">Airports</a><a href="/3d">3D India</a><a href="/about">About</a><a href="/privacy">Privacy</a></nav></div></header>'
+HEADER = f'<header><div class="wrap"><a class="wm" href="/">{HEAD_SVG}</a><nav><a href="/map">Radar</a><a href="/track">Track</a><a href="/airports">Airports</a><a href="/3d">3D India</a><a href="/about">About</a><a href="/privacy">Privacy</a></nav></div></header>'
 FOOTER = '<footer><div class="wrap"><span>© 2026 BlackRhino · blackrhino.in · free educational project, not for profit</span><span>Positions from community ADS-B. Not for navigation. Not affiliated with any airline, airport or data provider.</span></div></footer>'
 CSS = '<style>.wrap.wide{max-width:900px}main h2{text-transform:none}h1.ap{text-transform:none;font-size:clamp(34px,6vw,60px);line-height:1}.lead{font-size:18px;color:var(--ink-2);max-width:680px}.cta{display:inline-block;margin:6px 0 0;padding:11px 20px;border-radius:999px;background:var(--sky);color:#04101a;font:600 14px var(--sans)}.cta:hover{text-decoration:none;filter:brightness(1.08)}#nowList td:first-child{font-family:var(--mono);font-size:14px}.chips{display:flex;flex-wrap:wrap;gap:8px;list-style:none;padding:0}.chips a{display:block;padding:6px 14px;border:1px solid var(--line);border-radius:999px;color:var(--ink-2);font-size:14px}.chips a:hover{border-color:var(--sky);text-decoration:none;color:var(--ink)}.muted{color:var(--mute);font-size:13px}details{border-bottom:1px solid var(--line);padding:12px 0}summary{cursor:pointer;color:var(--ink);font-weight:500}</style>'
 
@@ -98,7 +98,7 @@ def hub():
     page('/airports', 'Live Flights at Indian Airports: Delhi, Mumbai, Bengaluru | BlackRhino', f'Live flight radar for {len(PAGES)} major Indian airports: aircraft nearby right now, runways and facts for Delhi, Mumbai, Bengaluru, Hyderabad and more. Free.', body, ld)
 
 def sitemap():
-    urls = [('/', '1.0', 'daily'), ('/map', '0.9', 'daily'), ('/about', '0.8', 'monthly'), ('/3d', '0.8', 'daily'), ('/globe', '0.5', 'weekly'), ('/airports', '0.8', 'weekly'), ('/share', '0.5', 'monthly'),
+    urls = [('/', '1.0', 'daily'), ('/map', '0.9', 'daily'), ('/about', '0.8', 'monthly'), ('/3d', '0.8', 'daily'), ('/track', '0.8', 'weekly'), ('/globe', '0.5', 'weekly'), ('/airports', '0.8', 'weekly'), ('/share', '0.5', 'monthly'),
             ('/credits', '0.3', 'monthly'), ('/privacy', '0.2', 'monthly'), ('/terms', '0.2', 'monthly')] + [(f'/airport/{slug(a)}', '0.7', 'daily') for a in PAGES]
     x = '<?xml version="1.0" encoding="UTF-8"?>\n<urlset xmlns="http://www.sitemaps.org/schemas/sitemap/0.9">\n' + ''.join(f'<url><loc>{SITE}{p}</loc><lastmod>{TODAY}</lastmod><changefreq>{f}</changefreq><priority>{pr}</priority></url>\n' for p, pr, f in urls) + '</urlset>\n'
     open(os.path.join(PUB, 'sitemap.xml'), 'w').write(x)
@@ -115,8 +115,8 @@ ABOUT_FACTS = [
  ('Cost and purpose', 'It is free, with no sign-up, no ads and no subscription. It is an educational, not-for-profit project. Commercial use of the site or its data is not permitted.'),
  ('Where the data comes from', 'Aircraft positions come from community ADS-B receiver networks (adsb.fi, adsb.lol and OpenSky). Registration, type and route come from public databases such as adsbdb. Maps come from OpenStreetMap-based tiles (OpenFreeMap), satellite imagery from Esri, terrain from open elevation data and clouds from EUMETSAT. See the credits page.'),
  ('How fresh it is', 'Positions refresh about every 15 seconds. Between updates the position is estimated from speed and heading. Near airports, where receivers often lose the signal, landing positions are modelled and marked as estimates.'),
- ('Features', 'Live 2D radar map; tilted 3D map and a 3D India view with terrain, sun and live satellite clouds; airport pages with live aircraft nearby; Near me, which shows which aircraft is above you using your device location, kept in your browser; search in plain words such as "hyd to blr" or "indigo above 30k ft", handled by a small language model that runs in your browser; and Share my flight, which records your phone GPS on board and lets family follow the flight.'),
- ('Privacy', 'No accounts, no cookies, no ads and no analytics. Your location for Near me never leaves your browser. Details are on the privacy page.'),
+ ('Features', 'Live 2D radar map; tilted 3D map and a 3D India view with terrain, sun and live satellite clouds; airport pages with live aircraft nearby; Near me, which shows which aircraft is above you using your device location, kept in your browser; search in plain words such as "hyd to blr" or "indigo above 30k ft", handled by a small language model that runs in your browser; Track a flight, which follows one flight by its number or your boarding pass and gives a link to share (the pass is read in your browser and never stored); and Share my flight, which records your phone GPS on board and lets family follow the flight.'),
+ ('Privacy', 'No accounts, no cookies, no ads and no analytics. Your location for Near me never leaves your browser. Boarding passes and tickets read on Track a flight are read in your browser: only the flight number and date are used, and nothing is stored. Details are on the privacy page.'),
  ('Limits', 'Not for navigation, flying or safety decisions. Positions can be late, missing or wrong. Military-flagged and blocked aircraft are not shown. BlackRhino is not affiliated with any airline, airport or data provider.'),
  ('Open source', 'The code is open source under the MIT licence: https://github.com/themonkkey/blackrhino'),
 ]
@@ -130,7 +130,7 @@ def about():
     body = f'''<main class="wrap"><div class="lbl">About</div><h1 class="ap">about blackrhino</h1>
 <p class="lead">BlackRhino is a free, educational live flight radar for India: every aircraft over Indian airspace, on a 2D and 3D map.</p>
 {rows}
-<h2>explore</h2><ul class="chips"><li><a href="/map">Live flight radar map</a></li><li><a href="/3d">3D India</a></li><li><a href="/airports">Airport pages</a></li><li><a href="/credits">Data credits</a></li><li><a href="/privacy">Privacy</a></li><li><a href="/terms">Terms</a></li></ul>
+<h2>explore</h2><ul class="chips"><li><a href="/map">Live flight radar map</a></li><li><a href="/track">Track a flight</a></li><li><a href="/3d">3D India</a></li><li><a href="/airports">Airport pages</a></li><li><a href="/credits">Data credits</a></li><li><a href="/privacy">Privacy</a></li><li><a href="/terms">Terms</a></li></ul>
 <p class="muted">Last updated {TODAY}.</p></main>'''
     page('/about', 'About BlackRhino: a Free Live Flight Radar for India', 'What BlackRhino is, where its flight data comes from, what it shows, how it handles privacy and what its limits are. A free educational project.', body, ld)
 
@@ -139,6 +139,7 @@ def llms():
          '## Key facts', ''] + [f'- {k}: {v}' for k, v in ABOUT_FACTS] + ['', '## Main pages', '',
          f'- [Live flight radar map of India]({SITE}/map): every aircraft with altitude, speed and route; flight search; airport boards; tilt to 3D.',
          f'- [3D India flight tracker]({SITE}/3d): terrain, sun, live satellite clouds, chase and cockpit views.',
+         f'- [Track a flight]({SITE}/track): where one flight is now and when it lands, by flight number or boarding pass (read in the browser), with a share link that carries only the flight number and date.',
          f'- [Airports]({SITE}/airports): live aircraft near {len(PAGES)} major Indian airports, with runways and facts.',
          f'- [About]({SITE}/about): what BlackRhino is, data sources, privacy and limits.',
          f'- [Data credits]({SITE}/credits): the community networks and open datasets used.',

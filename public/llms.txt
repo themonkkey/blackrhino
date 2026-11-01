@@ -9,8 +9,8 @@
 - Cost and purpose: It is free, with no sign-up, no ads and no subscription. It is an educational, not-for-profit project. Commercial use of the site or its data is not permitted.
 - Where the data comes from: Aircraft positions come from community ADS-B receiver networks (adsb.fi, adsb.lol and OpenSky). Registration, type and route come from public databases such as adsbdb. Maps come from OpenStreetMap-based tiles (OpenFreeMap), satellite imagery from Esri, terrain from open elevation data and clouds from EUMETSAT. See the credits page.
 - How fresh it is: Positions refresh about every 15 seconds. Between updates the position is estimated from speed and heading. Near airports, where receivers often lose the signal, landing positions are modelled and marked as estimates.
-- Features: Live 2D radar map; tilted 3D map and a 3D India view with terrain, sun and live satellite clouds; airport pages with live aircraft nearby; Near me, which shows which aircraft is above you using your device location, kept in your browser; search in plain words such as "hyd to blr" or "indigo above 30k ft", handled by a small language model that runs in your browser; and Share my flight, which records your phone GPS on board and lets family follow the flight.
-- Privacy: No accounts, no cookies, no ads and no analytics. Your location for Near me never leaves your browser. Details are on the privacy page.
+- Features: Live 2D radar map; tilted 3D map and a 3D India view with terrain, sun and live satellite clouds; airport pages with live aircraft nearby; Near me, which shows which aircraft is above you using your device location, kept in your browser; search in plain words such as "hyd to blr" or "indigo above 30k ft", handled by a small language model that runs in your browser; Track a flight, which follows one flight by its number or your boarding pass and gives a link to share (the pass is read in your browser and never stored); and Share my flight, which records your phone GPS on board and lets family follow the flight.
+- Privacy: No accounts, no cookies, no ads and no analytics. Your location for Near me never leaves your browser. Boarding passes and tickets read on Track a flight are read in your browser: only the flight number and date are used, and nothing is stored. Details are on the privacy page.
 - Limits: Not for navigation, flying or safety decisions. Positions can be late, missing or wrong. Military-flagged and blocked aircraft are not shown. BlackRhino is not affiliated with any airline, airport or data provider.
 - Open source: The code is open source under the MIT licence: https://github.com/themonkkey/blackrhino
 
@@ -18,6 +18,7 @@
 
 - [Live flight radar map of India](https://blackrhino.in/map): every aircraft with altitude, speed and route; flight search; airport boards; tilt to 3D.
 - [3D India flight tracker](https://blackrhino.in/3d): terrain, sun, live satellite clouds, chase and cockpit views.
+- [Track a flight](https://blackrhino.in/track): where one flight is now and when it lands, by flight number or boarding pass (read in the browser), with a share link that carries only the flight number and date.
 - [Airports](https://blackrhino.in/airports): live aircraft near 41 major Indian airports, with runways and facts.
 - [About](https://blackrhino.in/about): what BlackRhino is, data sources, privacy and limits.
 - [Data credits](https://blackrhino.in/credits): the community networks and open datasets used.

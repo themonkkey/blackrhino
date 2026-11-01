@@ -1,7 +1,7 @@
 // Cache-first for libraries, models and map tiles so repeat visits open instantly.
 // Pages are network-first (cache only as offline fallback); live flight data (/api) is never cached.
-const LIB = 'ft-lib-v4', TILES = 'ft-tiles-v1', PAGES = 'br-pages-v23', MAX_TILES = 4000;
-const SHELL = ['./', 'map', '3d', 'globe', 'share', 'live', 'config.js', 'shared.js', 'shared-extra.js', 'near.js', 'slm.js', 'eta.js', 'fir.json', 'app.css', 'airports.json', 'manifest.webmanifest',
+const LIB = 'ft-lib-v4', TILES = 'ft-tiles-v1', PAGES = 'br-pages-v25', VENDOR = 'br-vendor-v1', MAX_TILES = 4000;   // bump VENDOR when /vendor/ changes
+const SHELL = ['./', 'map', '3d', 'globe', 'share', 'live', 'track', 'track.js', 'bcbp.js', 'config.js', 'shared.js', 'shared-extra.js', 'near.js', 'slm.js', 'eta.js', 'fir.json', 'app.css', 'airports.json', 'manifest.webmanifest',
   'icons/icon-192.png', 'icons/icon-512.png', 'icons/favicon-32.png', 'icons/mark.svg'];
 
 self.addEventListener('install', e => {
@@ -15,7 +15,7 @@ self.addEventListener('install', e => {
   self.skipWaiting();
 });
 self.addEventListener('activate', e => e.waitUntil(
-  caches.keys().then(ks => Promise.all(ks.filter(k => ![LIB, TILES, PAGES].includes(k)).map(k => caches.delete(k))))
+  caches.keys().then(ks => Promise.all(ks.filter(k => ![LIB, TILES, PAGES, VENDOR].includes(k)).map(k => caches.delete(k))))
     .then(() => self.clients.claim())));
 
 // libs (SRI-checked, crossorigin) keep only ok, non-opaque copies; map tiles (plain <img>) may be opaque
@@ -30,17 +30,18 @@ async function cacheFirst(req, name, trim) {
   }
   return res;
 }
-async function networkFirst(req) {   // always try the network (bypassing the HTTP cache); cache is the offline fallback
-  const c = await caches.open(PAGES);
-  try { const res = await fetch(req, {cache: 'no-cache'}); if (res.ok) c.put(req, res.clone()); return res; }
-  catch (e) { return (await c.match(req, {ignoreSearch: true})) || Response.error(); }
+async function networkFirst(req, u) {   // always try the network (bypassing the HTTP cache); cache is the offline fallback
+  const c = await caches.open(PAGES), track = u.pathname.startsWith('/track/');
+  try { const res = await fetch(req, {cache: 'no-cache'}); if (res.ok) c.put(track ? 'track' : req, res.clone()); return res; }   // one copy of the track page, not one per flight
+  catch (e) { return (await c.match(track ? 'track' : req, {ignoreSearch: req.mode === 'navigate'})) || Response.error(); }
 }
 
 self.addEventListener('fetch', e => {
   const u = new URL(e.request.url);
-  if (e.request.method !== 'GET' || u.pathname.startsWith('/api/') || u.pathname.startsWith('/video/')) return;   // video uses range requests: let the browser handle it
+  if (e.request.method !== 'GET' || u.pathname.startsWith('/api/') || u.pathname.startsWith('/hist/') || u.pathname.startsWith('/video/')) return;   // live and history data are never cached   // video uses range requests: let the browser handle it
   if (u.hostname === 'server.arcgisonline.com') return e.respondWith(cacheFirst(e.request, TILES, true));
   if (u.hostname === 'cdn.jsdelivr.net' || u.hostname === 'cdnjs.cloudflare.com' || u.pathname.startsWith('/models/'))
     return e.respondWith(cacheFirst(e.request, LIB));
-  if (u.origin === location.origin) return e.respondWith(networkFirst(e.request));
+  if (u.origin === location.origin && u.pathname.startsWith('/vendor/')) return e.respondWith(cacheFirst(e.request, VENDOR));   // boarding-pass decoders, ~2.8 MB, fetched only when used
+  if (u.origin === location.origin) return e.respondWith(networkFirst(e.request, u));
 });

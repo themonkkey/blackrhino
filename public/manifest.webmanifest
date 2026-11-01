@@ -32,6 +32,16 @@
   ],
   "shortcuts": [
     {
+      "name": "Track a flight",
+      "url": "/track",
+      "icons": [
+        {
+          "src": "icons/icon-192.png",
+          "sizes": "192x192"
+        }
+      ]
+    },
+    {
       "name": "3D India",
       "url": "/3d",
       "icons": [

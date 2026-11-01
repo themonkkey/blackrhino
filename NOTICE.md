@@ -33,5 +33,10 @@ live data feed the app reads, carry their own terms. Forks must respect them.
 Leaflet (BSD-2-Clause), MapLibre GL JS (BSD-3-Clause), maplibre-gl-leaflet (ISC), three.js (MIT),
 CesiumJS (Apache-2.0). Fonts: Montserrat, Montserrat Alternates, JetBrains Mono (SIL OFL 1.1, via Google Fonts).
 
+## Third-party libraries (self-hosted in public/vendor/, used only to read boarding passes on /track)
+
+barcode-detector 3.2.3 (MIT) and zxing-wasm 3.1.6 (MIT), which compiles zxing-cpp (Apache-2.0) to WebAssembly;
+pdf.js / pdfjs-dist 6.4.299 (Apache-2.0, bundles core-js, MIT). Licence texts sit next to the files; see public/vendor/README.md.
+
 **Not for navigation.** Positions come from volunteer receivers and can be missing, late or wrong.
 "Estimated" aircraft are model predictions, not observations.

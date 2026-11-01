@@ -19,10 +19,6 @@
           "value": "strict-origin-when-cross-origin"
         },
         {
-          "key": "Permissions-Policy",
-          "value": "geolocation=(self), accelerometer=(self), gyroscope=(self), magnetometer=(self), camera=(), microphone=(), payment=(), usb=(), interest-cohort=()"
-        },
-        {
           "key": "Strict-Transport-Security",
           "value": "max-age=63072000"
         },
@@ -33,6 +29,37 @@
         {
           "key": "X-Frame-Options",
           "value": "DENY"
+        }
+      ]
+    },
+    {
+      "source": "/((?!track$|track/).*)",
+      "headers": [
+        {
+          "key": "Permissions-Policy",
+          "value": "geolocation=(self), accelerometer=(self), gyroscope=(self), magnetometer=(self), camera=(), microphone=(), payment=(), usb=(), interest-cohort=()"
+        }
+      ]
+    },
+    {
+      "source": "/track",
+      "headers": [
+        {
+          "key": "Permissions-Policy",
+          "value": "geolocation=(self), accelerometer=(self), gyroscope=(self), magnetometer=(self), camera=(self), microphone=(), payment=(), usb=(), interest-cohort=()"
+        }
+      ]
+    },
+    {
+      "source": "/track/:path+",
+      "headers": [
+        {
+          "key": "Permissions-Policy",
+          "value": "geolocation=(self), accelerometer=(self), gyroscope=(self), magnetometer=(self), camera=(self), microphone=(), payment=(), usb=(), interest-cohort=()"
+        },
+        {
+          "key": "X-Robots-Tag",
+          "value": "noindex"
         }
       ]
     },
@@ -55,6 +82,24 @@
       ]
     },
     {
+      "source": "/vendor/(.*)",
+      "headers": [
+        {
+          "key": "Cache-Control",
+          "value": "public, max-age=86400, stale-while-revalidate=604800"
+        }
+      ]
+    },
+    {
+      "source": "/vendor/zxing/zxing_reader.wasm",
+      "headers": [
+        {
+          "key": "Content-Type",
+          "value": "application/wasm"
+        }
+      ]
+    },
+    {
       "source": "/video/(.*)",
       "headers": [
         {
@@ -68,6 +113,10 @@
     {
       "source": "/hist/:path(flight|airport|status)",
       "destination": "https://flight-history.duospace-api.workers.dev/:path"
+    },
+    {
+      "source": "/track/:flight([A-Za-z0-9]{3,8})",
+      "destination": "/track"
     }
   ],
   "redirects": [

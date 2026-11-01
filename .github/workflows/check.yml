@@ -10,8 +10,10 @@ jobs:
       - uses: actions/setup-node@v4
         with: {node-version: 22}
       - run: npm run check
+      - name: Boarding pass and ticket parser tests
+        run: node scripts/test-bcbp.mjs
       - name: JSON files parse
-        run: for f in public/*.json public/apt3d/*.json vercel.json package.json; do node -e "JSON.parse(require('fs').readFileSync('$f','utf8'))" || exit 1; done
+        run: for f in public/*.json public/apt3d/*.json public/manifest.webmanifest vercel.json package.json; do node -e "JSON.parse(require('fs').readFileSync('$f','utf8'))" || exit 1; done
       - name: Module syntax (3D pages)
         run: |
           for f in public/3d.html public/globe.html; do

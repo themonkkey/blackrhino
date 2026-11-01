@@ -23,3 +23,5 @@ eta/.venv/
 data/cache_osm/
 film/teaser/
 scripts/.indexnow-key
+scripts/track-tests/fx/
+scripts/track-tests/shots/
